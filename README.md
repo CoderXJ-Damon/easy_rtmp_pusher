@@ -1,3 +1,2 @@
 # rtmp
-
-rtmp推流拉流
+基于librtmp和ffmpeg实现rtmp推流和拉流
