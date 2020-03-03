@@ -1,0 +1,81 @@
+INFO: RTMP_Connect ---------->
+
+INFO: Create connect: start 0 connect
+INFO: RTMP_Connect0 Step1 tcp three-Way handshake: create a socket
+INFO: RTMP_Connect0 Step1 tcp three-Way handshake: start connect server
+INFO: RTMP_Connect0 Step1 tcp three-Way handshake: connect server successfully
+INFO: Create connect: 0 connect ok
+INFO: RTMP_Connect1, Step 2 HandShake, handshaking
+INFO: HandShake, Step 2 HandShake, send C0 and S0
+INFO: HandShake: Type Answer(S0): 0x03
+INFO: HandShake: try receive S1
+INFO: HandShake: received S1, suptime:1581945299
+INFO: HandShake: Server Uptime : 1581945299
+INFO: HandShake: FMS Version   : 0.0.0.0
+INFO: HandShake: send C2,
+INFO: HandShake: try receive S2,
+INFO: HandShake: received S2,
+INFO: RTMP_Connect1, Step 2 handshaked
+INFO: RTMP_Connect1 Step 3 connect, msg cmd (typeID=20) (Connect) start
+INFO: Setp 3 connect. msg cmd (typeID=20) (Connect) ok
+INFO: RTMP_ConnectStream ---------->
+
+INFO:
+RTMP_ConnectStream, setup netstream[0x5]: start process the received data
+INFO: RTMP_ClientPacket, Window Acknowledgement Size(server) (typeID=5)
+INFO: HandleServerBW: server BW = 2500000
+INFO:
+RTMP_ConnectStream, setup netstream[0x6]: start process the received data
+INFO: RTMP_ClientPacket, Set Peer Bandwidth(server) (typeID=6)
+INFO: HandleClientBW: client BW = 2500000 2
+INFO:
+RTMP_ConnectStream, setup netstream[0x1]: start process the received data
+INFO: RTMP_ClientPacket, Set Chunk Size (typeID=1)
+INFO: HandleChangeChunkSize, received: chunk size change to 60000
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 453 bytes
+INFO: HandleInvoke, server invoking <_result>
+INFO: HandleInvoke, received result for method call <connect>
+INFO: SendReleaseStream releaseStream, numInvokes:2
+INFO: SendFCPublish FCPublish, numInvokes:3, playpath:35
+INFO: RTMP_SendCreateStream Step 4 createStream start
+INFO: RTMP_SendCreateStream Step 4 createStream leave
+INFO: HandleInvoke Step 4 createStream finish
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 21 bytes
+INFO: HandleInvoke, server invoking <onBWDone>
+INFO: SendCheckBW _checkbw
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 21 bytes
+INFO: HandleInvoke, server invoking <_result>
+INFO: HandleInvoke, received result id 2.000000 without matching request
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 21 bytes
+INFO: HandleInvoke, server invoking <_result>
+INFO: HandleInvoke, received result id 3.000000 without matching request
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 29 bytes
+INFO: HandleInvoke, server invoking <_result>
+INFO: HandleInvoke, received result for method call <createStream>
+INFO: HandleInvoke Step 4 receive createStream result: stream_id:1
+INFO: SendPublish publish, numInvokes:6, playpath:35
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 102 bytes
+INFO: HandleInvoke, server invoking <onFCPublish>
+INFO: HandleInvoke, can't handle method:onFCPublish
+INFO:
+RTMP_ConnectStream, setup netstream[0x14]: start process the received data
+INFO: RTMP_ClientPacket, received: invoke 136 bytes
+INFO: HandleInvoke, server invoking <onStatus>
+INFO: HandleInvoke, onStatus: NetStream.Publish.Start
+INFO: RTMP_ConnectStream ok. ---------->
+
+INFO: Start to send data ...   ---------->
+
+WARNING: unknown type:18

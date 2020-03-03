@@ -1,0 +1,26 @@
+﻿#ifndef CAPTUERELOOPER_H
+#define CAPTUERELOOPER_H
+#include <thread>
+#include "mediabase.h"
+namespace LQF
+{
+class CaptureLooper
+{
+public:
+    CaptureLooper();
+    virtual ~CaptureLooper();
+    virtual RET_CODE Start();
+    virtual void Stop();
+    virtual void Loop() = 0;
+private:
+    static void* trampoline(void* p);
+
+protected:
+    std::thread *worker_;
+    bool request_exit_ = false;
+    bool running_ = false;
+};
+
+}
+
+#endif // CAPTUERELOOPER_H
