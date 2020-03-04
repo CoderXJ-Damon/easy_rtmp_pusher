@@ -68,8 +68,6 @@ private:
     string profile_;
     string level_id_;
 
-
-
     string sps_;
     string pps_;
     //data

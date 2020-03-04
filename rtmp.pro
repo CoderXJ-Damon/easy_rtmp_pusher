@@ -28,8 +28,7 @@ SOURCES += main.cpp \
     videocapturer.cpp \
     videooutsdl.cpp \
     audiooutsdl.cpp \
-    ringbuffer.cpp \
-    videodeccodeloop.cpp \
+    ringbuffer.cpp \    
     avsync.cpp
 win32 {
 INCLUDEPATH += $$PWD/ffmpeg-4.2.1-win32-dev/include
@@ -77,4 +76,5 @@ HEADERS += \
     videooutsdl.h \
     audiooutsdl.h \
     ringbuffer.h \
-    avsync.h
+    avsync.h \
+    avtimebase.h

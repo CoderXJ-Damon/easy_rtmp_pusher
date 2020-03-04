@@ -35,15 +35,15 @@ RTMPBase::RTMPBase():
 }
 
 RTMPBase::RTMPBase(RTMP_BASE_TYPE rtmp_obj_type):
-    rtmp_obj_type_(rtmp_obj_type_),
+    rtmp_obj_type_(rtmp_obj_type),
     enable_video_(true),
     enable_audio_(true)
 {
     initRtmp();
 }
 
-RTMPBase::RTMPBase(RTMP_BASE_TYPE rtmp_obj_type_,std::string& url):
-    rtmp_obj_type_(rtmp_obj_type_),
+RTMPBase::RTMPBase(RTMP_BASE_TYPE rtmp_obj_type,std::string& url):
+    rtmp_obj_type_(rtmp_obj_type),
     url_(url),
     enable_video_(true),
     enable_audio_(true)

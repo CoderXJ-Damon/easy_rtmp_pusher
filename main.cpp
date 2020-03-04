@@ -21,8 +21,8 @@ extern int rtmpPublish(int argc, char* argv[]);
 extern int testAacEncoder(const char *pcmFileName, const char* aacFileName);
 #undef main
 
-#define RTMP_URL "rtmp://111.229.231.225/live/livestream"
-//#define RTMP_URL "rtmp://192.168.1.11/live/livestream"
+//#define RTMP_URL "rtmp://111.229.231.225/live/livestream"
+#define RTMP_URL "rtmp://192.168.1.11/live/livestream"
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 //// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 int main(int argc, char* argv[])

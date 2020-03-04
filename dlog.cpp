@@ -231,11 +231,11 @@ void write_log(slog_level level, int print_stacktrace, const char *func_name, in
     snprintf(log_line, sizeof(log_line) - 1, "[%s %s-%d %s:%d] %s\n",
         level_str, timestr, int(cur_time%1000), func_name, line, log_content);
 //    _slog_lock(&g_logger_cfg.mtx);
-    fwrite(log_line, sizeof(char), strlen(log_line), g_logger_cfg.log_file);
-    if (TRUE == print_stacktrace) {
-        _write_stacktrace();
-    }
-    fflush(g_logger_cfg.log_file);
+//    fwrite(log_line, sizeof(char), strlen(log_line), g_logger_cfg.log_file);
+//    if (TRUE == print_stacktrace) {
+//        _write_stacktrace();
+//    }
+//    fflush(g_logger_cfg.log_file);
     printf("%s", log_line);     // 先打印到终端再说
 //    _slog_unlock(&g_logger_cfg.mtx);
 }

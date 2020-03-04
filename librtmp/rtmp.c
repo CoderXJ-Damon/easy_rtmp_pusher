@@ -1285,14 +1285,14 @@ int RTMP_ClientPacket(RTMP *r, RTMPPacket *packet)
         RTMP_LogInfo(RTMP_LOGINFO, "%s, Set Chunk Size (typeID=1)", __FUNCTION__);
         HandleChangeChunkSize(r, packet);
         // 如果是发布则也回一个包
-        if(r->Link.protocol & RTMP_FEATURE_WRITE)
-        {
-             ret = RTMP_SendChunkSize(r);
-             if(!ret)
-             {
-                 RTMP_LogInfo(RTMP_LOGERROR, "RTMP_SendChunkSize failed");
-             }
-        }
+//        if(r->Link.protocol & RTMP_FEATURE_WRITE)
+//        {
+//             ret = RTMP_SendChunkSize(r);
+//             if(!ret)
+//             {
+//                 RTMP_LogInfo(RTMP_LOGERROR, "RTMP_SendChunkSize failed");
+//             }
+//        }
         break;
 
     case RTMP_PACKET_TYPE_BYTES_READ_REPORT:    //RTMP消息类型ID=3

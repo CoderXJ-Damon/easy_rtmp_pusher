@@ -100,7 +100,7 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     {
         NaluStruct* nalu = (NaluStruct*)data;
         if(sendH264Packet((char*)nalu->data,nalu->size,(nalu->type == 0x05) ? true : false,
-                          TimesUtil::GetTimeMillisecond()-time_))
+                          nalu->pts))
         {
             //LogInfo("send pack ok");
         }
@@ -126,7 +126,7 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     {
         AudioRawMsg* audio_raw = (AudioRawMsg*)data;
         if(sendPacket(RTMP_PACKET_TYPE_AUDIO, (unsigned char*)audio_raw->data,
-                      audio_raw->size, TimesUtil::GetTimeMillisecond() -time_))
+                      audio_raw->size, audio_raw->pts))
         {
 
         }
@@ -347,7 +347,7 @@ int RTMPPusher::sendPacket(unsigned int packet_type, unsigned char *data,
     {
         packet.m_nChannel = RTMP_NETWORK_CHANNEL;
     }
-    packet.m_headerType = RTMP_PACKET_SIZE_MEDIUM;
+    packet.m_headerType = RTMP_PACKET_SIZE_LARGE;
     packet.m_nTimeStamp = timestamp;
     packet.m_nInfoField2 = rtmp_->m_stream_id;
     packet.m_nBodySize = size;

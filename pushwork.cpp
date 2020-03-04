@@ -1,4 +1,6 @@
 ﻿#include "pushwork.h"
+#include "avtimebase.h"
+
 namespace LQF {
 PushWork::PushWork()
 {
@@ -116,6 +118,9 @@ RET_CODE PushWork::Init(const Properties &properties)
         return RET_FAIL;
     }
 
+    // 初始化publish time
+    AVPublishTime::GetInstance()->Rest();
+
     // 设置音频编码器
     audio_encoder_ = new AACEncoder();
     if(!rtmp_pusher)
@@ -189,6 +194,11 @@ RET_CODE PushWork::Init(const Properties &properties)
     metadata->audiodatarate = 125;
     rtmp_pusher->Post(RTMP_BODY_METADATA, metadata, false);
 
+    // 设置音频pts的间隔
+    double audio_frame_duration = 1000.0/audio_encoder_->get_sample_rate() *audio_encoder_->GetFrameSampleSize();
+    LogInfo("audio_frame_duration:%lf", audio_frame_duration);
+    AVPublishTime::GetInstance()->set_audio_frame_duration(audio_frame_duration);
+    AVPublishTime::GetInstance()->set_audio_pts_strategy(AVPublishTime::PTS_RECTIFY);//帧间隔矫正
     // 设置音频捕获
     audio_capturer_ = new AudioCapturer();
     Properties  aud_cap_properties;
@@ -208,6 +218,10 @@ RET_CODE PushWork::Init(const Properties &properties)
         return RET_FAIL;
     }
 
+    // 设置视频pts的间隔
+    double video_frame_duration = 1000.0 / video_encoder_->get_framerate();
+    LogInfo("video_frame_duration:%lf", video_frame_duration);
+    AVPublishTime::GetInstance()->set_video_pts_strategy(AVPublishTime::PTS_RECTIFY);//帧间隔矫正
     video_capturer = new VideoCapturer();
     Properties  vid_cap_properties;
     vid_cap_properties.SetProperty("video_test", 1);
@@ -310,6 +324,7 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
                 fflush(aac_fp_);
             }
             AudioRawMsg *aud_raw_msg = new AudioRawMsg(aac_size + 2);
+            aud_raw_msg->pts = AVPublishTime::GetInstance()->get_audio_pts();
             aud_raw_msg->data[0] = 0xaf;
             aud_raw_msg->data[1] = 0x01;    // raw数据
             memcpy(&aud_raw_msg->data[2], aac_buf_, aac_size);
@@ -356,6 +371,7 @@ void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
         // 获取到编码数据
         NaluStruct *nalu = new NaluStruct(video_nalu_buf, video_nalu_size_);
         nalu->type = video_nalu_buf[0] & 0x1f;
+        nalu->pts = AVPublishTime::GetInstance()->get_video_pts();
         rtmp_pusher->Post(RTMP_BODY_VID_RAW, nalu);
         LogDebug("YuvCallback Post");
         fwrite(start_code, 1, 4, h264_fp_);

@@ -586,7 +586,7 @@ public:
     int size;
     int with_adts_ = 0;
     unsigned char *data = NULL;
-    int64_t pts;
+    uint32_t pts;
 };
 
 class AudioSpecMsg :public MsgBaseObj
@@ -614,7 +614,7 @@ public:
     int type;
     int size;
     unsigned char *data = NULL;
-    int64_t pts;
+    uint32_t pts;
 };
 
 class VideoSequenceHeaderMsg :public MsgBaseObj
