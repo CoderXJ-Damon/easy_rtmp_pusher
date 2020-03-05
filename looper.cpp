@@ -77,7 +77,7 @@ void Looper::loop()
                 break;
             }
 
-            LogInfo("processing msg %d", msg->what);
+            LogDebug("processing msg %d", msg->what);
             handle(msg->what, msg->obj);
             delete msg;
         }
@@ -85,11 +85,11 @@ void Looper::loop()
         {
             queue_mutex_.unlock();
             //            LogInfo("no msg");
-			head_data_available_->wait();
-                      LogInfo("wait get msg:%d", msg_queue_.size());
-			continue;
+            head_data_available_->wait();
+            LogDebug("wait get msg:%d", msg_queue_.size());
+            continue;
         }
-      //  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        //  std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     delete msg->obj;
     delete msg;

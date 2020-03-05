@@ -63,7 +63,7 @@ char * put_amf_double(char *c, double d)
 
 void RTMPPusher::handle(int what, MsgBaseObj *data)
 {
-    LogInfo("into");
+    LogDebug("into");
     //要加是否断开连接逻辑
     if(!IsConnect())
     {
@@ -116,7 +116,7 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
         AudioSpecMsg* audio_spec = (AudioSpecMsg*)data;
         uint8_t aac_spec_[4];
         aac_spec_[0] = 0xAF;
-        aac_spec_[1] = 0x0;
+        aac_spec_[1] = 0x0;     // 0 = aac sequence header
         AACRTMPPackager::GetAudioSpecificConfig(&aac_spec_[2], audio_spec->profile_,
                 audio_spec->sample_rate_, audio_spec->channels_);
         SendAudioSpecificConfig((char *)aac_spec_, 4);
@@ -140,7 +140,7 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     default:
         break;
     }
-     LogInfo("leave");
+     LogDebug("leave");
 }
 
 bool RTMPPusher::SendMetadata(FLVMetadataMsg *metadata)

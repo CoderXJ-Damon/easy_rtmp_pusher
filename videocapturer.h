@@ -38,6 +38,7 @@ private:
     int height_ = 0;
     int pixel_format_ = 0;
     int fps_;
+    double frame_duration_ = 40;
 
     // 本地文件测试
     int openYuvFile(const char *file_name);

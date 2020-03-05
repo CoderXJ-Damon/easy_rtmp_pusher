@@ -491,12 +491,12 @@ class MsgBaseObj
 {
 public:
     MsgBaseObj(){}
-    ~MsgBaseObj(){}
+    virtual ~MsgBaseObj(){}
 };
 
 enum RTMP_BODY_TYPE
 {
-    RTMP_BODY_METADATA,
+    RTMP_BODY_METADATA, // metadata
     RTMP_BODY_AUD_RAW,  // 纯raw data
     RTMP_BODY_AUD_SPEC, // AudioSpecificConfig
     RTMP_BODY_VID_RAW,  // raw data

@@ -27,8 +27,6 @@ extern int testAacEncoder(const char *pcmFileName, const char* aacFileName);
 //// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 int main(int argc, char* argv[])
 {
-
-
     init_logger("rtmp_push.log", S_INFO);
     ////    rtmpPublish(argc, argv);
     //    {
@@ -52,6 +50,7 @@ int main(int argc, char* argv[])
         properties.SetProperty("audio_sample_rate", 48000);
         properties.SetProperty("audio_bitrate", 64*1024);
         properties.SetProperty("audio_channels", 2);
+
         //视频test模式
         properties.SetProperty("video_test", 1);
         properties.SetProperty("input_yuv_name", "720x480_25fps_420p.yuv");
@@ -70,6 +69,8 @@ int main(int argc, char* argv[])
         if(pushwork.Init(properties) != RET_OK)
         {
             LogError("pushwork.Init failed");
+            getchar();
+            return 0;
         }
 
 

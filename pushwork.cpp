@@ -84,9 +84,9 @@ RET_CODE PushWork::Init(const Properties &properties)
     }
     rtmp_debug_ = properties.GetProperty("rtmp_debug", 0);
 
-    if(0 == rtmp_debug_)
+    if(1 == rtmp_debug_)
     {
-        video_out_sdl = new VideoOutSDL();
+        video_out_sdl = new VideoOutSDL();  // 显示用的
         if(!video_out_sdl)
         {
             LogError("new VideoOutSDL() failed");
@@ -105,7 +105,7 @@ RET_CODE PushWork::Init(const Properties &properties)
     }
 
     // 先启动RTMPPusher
-    rtmp_pusher = new RTMPPusher();     // 启动后线程推流的线程就启动了
+    rtmp_pusher = new RTMPPusher();     // 启动后线程推流的线程就启动了，带了线程
     if(!rtmp_pusher)
     {
         LogError("new RTMPPusher() failed");
@@ -119,9 +119,9 @@ RET_CODE PushWork::Init(const Properties &properties)
     }
 
     // 初始化publish time
-    AVPublishTime::GetInstance()->Rest();
+    AVPublishTime::GetInstance()->Rest();   // 推流打时间戳的问题
 
-    // 设置音频编码器
+    // 设置音频编码器，先音频捕获初始化
     audio_encoder_ = new AACEncoder();
     if(!rtmp_pusher)
     {
@@ -144,7 +144,8 @@ RET_CODE PushWork::Init(const Properties &properties)
         LogError("fopen push_dump.aac failed");
         return RET_FAIL;
     }
-
+    // 音频重采样，捕获的PCM数据 s16交错模式, 做编码的时候float棋盘格格式的
+    // 1-快速掌握音视频开发基础知识.pdf
     audio_resampler_ = new AudioResampler();
     AudioResampleParams aud_params;
     aud_params.logtag = "[audio-resample]";
@@ -158,7 +159,7 @@ RET_CODE PushWork::Init(const Properties &properties)
     audio_resampler_->InitResampler(aud_params);
 
 
-
+    // 视频编码
     video_encoder_ = new H264Encoder();
     Properties  vid_codec_properties;
     vid_codec_properties.SetProperty("width", video_width_);
@@ -179,6 +180,7 @@ RET_CODE PushWork::Init(const Properties &properties)
         return RET_FAIL;
     }
 
+    // RTMP -> FLV的格式去发送， metadata
     FLVMetadataMsg *metadata = new FLVMetadataMsg();
     // 设置视频相关
     metadata->has_video = true;
@@ -278,7 +280,7 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
                                                      audio_encoder_->get_sample_rate());
         rtmp_pusher->Post(RTMP_BODY_AUD_SPEC, aud_spc_msg);
     }
-
+    // 音频重采样
     auto ret = audio_resampler_->SendResampleFrame(pcm, size);
     if(ret <0)
     {   LogError("SendResampleFrame failed ");
@@ -324,9 +326,10 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
                 fflush(aac_fp_);
             }
             AudioRawMsg *aud_raw_msg = new AudioRawMsg(aac_size + 2);
+            // 打上时间戳
             aud_raw_msg->pts = AVPublishTime::GetInstance()->get_audio_pts();
             aud_raw_msg->data[0] = 0xaf;
-            aud_raw_msg->data[1] = 0x01;    // raw数据
+            aud_raw_msg->data[1] = 0x01;    // 1 =  raw data数据
             memcpy(&aud_raw_msg->data[2], aac_buf_, aac_size);
             rtmp_pusher->Post(RTMP_BODY_AUD_RAW, aud_raw_msg);
             LogDebug("PcmCallback Post");

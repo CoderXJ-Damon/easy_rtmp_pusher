@@ -23,6 +23,7 @@ RET_CODE VideoCapturer::Init(const Properties &properties)
     height_ = properties.GetProperty("height", 1080);
     pixel_format_ = properties.GetProperty("pixel_format", 0);
     fps_ = properties.GetProperty("fps", 25);
+    frame_duration_ = 1000.0 / fps_;
     return RET_OK;
 }
 
@@ -52,7 +53,7 @@ void VideoCapturer::Loop()
             }
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
     closeYuvFile();
 }
@@ -87,8 +88,8 @@ int VideoCapturer::readYuvFile(uint8_t *yuv_buf, int32_t yuv_buf_size)
             return -1;
         }
     }
-//    LogInfo("yuv_total_duration_:%lldms", (int64_t)yuv_total_duration_);
-    yuv_total_duration_ += 25;  // 1帧25ms
+    LogDebug("yuv_total_duration_:%lldms, %lldms", (int64_t)yuv_total_duration_, dif);
+    yuv_total_duration_ += frame_duration_;  //
     return 0;
 }
 

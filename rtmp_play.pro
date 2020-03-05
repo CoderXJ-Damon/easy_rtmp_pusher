@@ -3,7 +3,7 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 #DEFINES += _WIN32
-SOURCES += \
+SOURCES += main.cpp \
     librtmp/amf.c \
     librtmp/hashswf.c \
     librtmp/log.c \
@@ -26,11 +26,17 @@ SOURCES += \
     mediabase.cpp \
     aacrtmppackager.cpp \
     videocapturer.cpp \
+    rtmpplayer.cpp \
+    audiodecode.cpp \
+    aacdecoder.cpp \
+    h264decoder.cpp \
     videooutsdl.cpp \
     audiooutsdl.cpp \
-    ringbuffer.cpp \    
-    avsync.cpp \
-    main_publish.cpp
+    ringbuffer.cpp \
+    audiodecodeloop.cpp \
+    pullwork.cpp \
+    videodeccodeloop.cpp \
+    avsync.cpp
 win32 {
 INCLUDEPATH += $$PWD/ffmpeg-4.2.1-win32-dev/include
 LIBS += $$PWD/ffmpeg-4.2.1-win32-dev/lib/avformat.lib   \
@@ -58,6 +64,7 @@ HEADERS += \
     aacencoder.h \
     audio.h \
     audioresample.h \
+    codecs.h \
     dlog.h \
     rtmppusher.h \
     looper.h \
@@ -74,8 +81,13 @@ HEADERS += \
     aacrtmppackager.h \
     videocapturer.h \
     rtmpplayer.h \
+    audiodecode.h \
+    aacdecoder.h \
+    h264decoder.h \
     videooutsdl.h \
     audiooutsdl.h \
     ringbuffer.h \
-    avsync.h \
-    avtimebase.h
+    audiodecodeloop.h \
+    pullwork.h \
+    videodecodeloop.h \
+    avsync.h

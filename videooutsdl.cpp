@@ -46,7 +46,7 @@ RET_CODE VideoOutSDL::Init(const Properties &properties)
         return RET_FAIL;
     }
     //创建窗口
-    win_ = SDL_CreateWindow("win_title_.c_str()",
+    win_ = SDL_CreateWindow(win_title_.c_str(),
                            win_x_,
                            win_y_,
                            win_width_, win_height_,
