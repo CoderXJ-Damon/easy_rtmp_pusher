@@ -272,7 +272,7 @@ bool RTMPPusher::SendAudioSpecificConfig(char* data,int length)
     packet.m_nInfoField2 = rtmp_->m_stream_id;
     packet.m_nBodySize  = 4;
 
-    //调用发送接口
+    //调用发送接口 发送一个消息
     int nRet = RTMP_SendPacket(rtmp_, &packet, 0);
     if (nRet != 1)
     {
@@ -347,7 +347,7 @@ int RTMPPusher::sendPacket(unsigned int packet_type, unsigned char *data,
     {
         packet.m_nChannel = RTMP_NETWORK_CHANNEL;
     }
-    packet.m_headerType = RTMP_PACKET_SIZE_LARGE;
+    packet.m_headerType = RTMP_PACKET_SIZE_MEDIUM;
     packet.m_nTimeStamp = timestamp;
     packet.m_nInfoField2 = rtmp_->m_stream_id;
     packet.m_nBodySize = size;

@@ -69,7 +69,7 @@ TLS_CTX RTMP_TLS_ctx;
 #define RTMP_SIG_SIZE 1536
 #define RTMP_LARGE_HEADER_SIZE 12
 
-static const int packetSize[] = { 12, 8, 4, 1 };
+static const int packetSize[] = { 12, 8, 4, 1 }; // basic header 1个字节，没有extend time
 
 int RTMP_ctrlC;
 
@@ -4188,10 +4188,10 @@ RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue)
     }
     //当ChunkStreamID大于319时
     if (packet->m_nChannel > 319)
-        cSize = 2;  //ChunkBasicHeader是3个字节
+        cSize = 2;  // Chunk Basic Header是3个字节
     //当ChunkStreamID大于63时
     else if (packet->m_nChannel > 63)
-        cSize = 1;  //ChunkBasicHeader是2个字节
+        cSize = 1;  // Chunk Basic Header是2个字节
     if (cSize)
     {
         header -= cSize;// header起始位置再 -1或-2

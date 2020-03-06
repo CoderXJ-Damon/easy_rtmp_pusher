@@ -48,7 +48,7 @@ void Looper::addmsg(LooperMessage *msg, bool flush)
     msg_queue_.push_back(msg);
     queue_mutex_.unlock();
     // 发送数据进行通知
-    LogInfo("post msg %d, size:%d", msg->what, msg_queue_.size());
+    LogDebug("post msg %d, size:%d", msg->what, msg_queue_.size());
 
     head_data_available_->post();
     //    LogInfo("Looper post");

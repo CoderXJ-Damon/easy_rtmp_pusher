@@ -3,7 +3,7 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 #DEFINES += _WIN32
-SOURCES += main.cpp \
+SOURCES += main_play.cpp \
     librtmp/amf.c \
     librtmp/hashswf.c \
     librtmp/log.c \

@@ -36,7 +36,12 @@ AudioOutSDL::~AudioOutSDL()
     LogInfo("~AudioOutSDL()");
     if(ring_buffer_)
     {
-        Release();
+        SDL_PauseAudio(1);
+        // 关闭清理
+        // 关闭音频设备
+        SDL_CloseAudio();
+        SDL_Quit();
+        delete ring_buffer_;
     }
 }
 RET_CODE AudioOutSDL::Init(const Properties &properties)
@@ -53,30 +58,18 @@ RET_CODE AudioOutSDL::Init(const Properties &properties)
         return RET_FAIL;
     }
     // 音频参数设置SDL_AudioSpec
-    wanted_spec.freq = sample_rate_;          // 采样频率
-    wanted_spec.format = sample_fmt_; // 采样点格式
-    wanted_spec.channels = channels_;          // 2通道
-    wanted_spec.silence = 0;
-    wanted_spec.samples = 1024;       // 每次读取的采样数量
-    wanted_spec.callback = fill_audio_pcm; // 回调函数
-    wanted_spec.userdata = this;
-    SDL_AudioSpec  spec;
+    spec.freq = sample_rate_;          // 采样频率
+    spec.format = sample_fmt_; // 采样点格式
+    spec.channels = channels_;          // 2通道
+    spec.silence = 0;
+    spec.samples = 1024;       // 每次读取的采样数量
+    spec.callback = fill_audio_pcm; // 回调函数
+    spec.userdata = this;
+
     //打开音频设备
-    audio_dev = SDL_OpenAudioDevice(NULL, 0, &wanted_spec, &spec,
-                                    SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
-    if(0 == audio_dev)
+    if(SDL_OpenAudio(&spec, NULL))
     {
-        LogError("SDL_OpenAudioDevice failed - %s", SDL_GetError());
-        return RET_FAIL;
-    }
-    if (spec.format != AUDIO_S16SYS)
-    {
-        LogError("SDL advised audio format %d is not supported!", spec.format);
-        return RET_FAIL;
-    }
-    if (spec.channels != wanted_spec.channels)
-    {
-        LogError("SDL advised channel count %d is not supported!", spec.channels);
+        LogError("Failed to open audio device, %s\n", SDL_GetError());
         return RET_FAIL;
     }
     //play audio
@@ -97,18 +90,7 @@ RET_CODE AudioOutSDL::Output(const uint8_t *pcm_buf, const uint32_t size)
 
 void AudioOutSDL::Release()
 {
-    // 关闭清理
-    // 关闭音频设备
-    if(audio_dev != 0)
-    {
-        SDL_PauseAudio(1);
-        SDL_CloseAudioDevice(audio_dev);
-        audio_dev = 0;
-    }
-    if(ring_buffer_)
-    {    delete ring_buffer_;
-        ring_buffer_ = NULL;
-    }
+
 }
 
 

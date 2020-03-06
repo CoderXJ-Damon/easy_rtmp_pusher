@@ -6,7 +6,7 @@
 #include "timeutil.h"
 namespace LQF
 {
-RTMPPlayer::RTMPPlayer():RTMPBase()
+RTMPPlayer::RTMPPlayer():RTMPBase(RTMP_BASE_TYPE_PLAY)
 {
     //    _decodeLoop = new DecodeLoop(window);
     //    _audioDecode = new AudioDecode();
@@ -379,7 +379,7 @@ void* RTMPPlayer::readPacketThread()
                     FLVMetadataMsg *metadata = new FLVMetadataMsg();
                     metadata->width = video_width;//720;
                     metadata->height = video_height;//480;
-                    audio_callable_object_(RTMP_BODY_METADATA, metadata, false);
+                    video_callable_object_(RTMP_BODY_METADATA, metadata, false);
                 }
             }
             else

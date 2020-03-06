@@ -92,38 +92,39 @@ RET_CODE PullWork::Init(const Properties &properties)
 void PullWork::audioCallback(int what, MsgBaseObj *data, bool flush)
 {
     int64_t cur_time = TimesUtil::GetTimeMillisecond();
-    if(what == RTMP_BODY_AUD_SPEC)
-    {
-        //        if(!audio_out_sdl)
-        //        {
-        //            // 初始化audio out相关
-        //            audio_out_sdl = new AudioOutSDL();
-        //            if(!audio_out_sdl)
-        //            {
-        //                LogError("new AudioOutSDL() failed");
-        //                return ;
-        //            }
-        //            AudioSpecMsg *audio_spec = (AudioSpecMsg *)data;
-        //            Properties aud_out_properties;
-        //            aud_out_properties.SetProperty("sample_rate", audio_spec->sample_rate_);
-        //            aud_out_properties.SetProperty("channels", audio_spec->channels_);
-        //            delete audio_spec;
-        //            if(audio_out_sdl->Init(aud_out_properties) != RET_OK)
-        //            {
-        //                LogError("audio_out_sdl Init failed");
-        //                return ;
-        //            }
-        //        }
-    }
-    else if(what == RTMP_BODY_AUD_RAW)
-    {
-        audio_decode_loop_->Post(what, data, flush);
-    }
-    else
-    {
-        LogError("can't handle what:%d", what);
-        delete data;
-    }
+//    if(what == RTMP_BODY_AUD_SPEC)
+//    {
+//        //        if(!audio_out_sdl)
+//        //        {
+//        //            // 初始化audio out相关
+//        //            audio_out_sdl = new AudioOutSDL();
+//        //            if(!audio_out_sdl)
+//        //            {
+//        //                LogError("new AudioOutSDL() failed");
+//        //                return ;
+//        //            }
+//        //            AudioSpecMsg *audio_spec = (AudioSpecMsg *)data;
+//        //            Properties aud_out_properties;
+//        //            aud_out_properties.SetProperty("sample_rate", audio_spec->sample_rate_);
+//        //            aud_out_properties.SetProperty("channels", audio_spec->channels_);
+//        //            delete audio_spec;
+//        //            if(audio_out_sdl->Init(aud_out_properties) != RET_OK)
+//        //            {
+//        //                LogError("audio_out_sdl Init failed");
+//        //                return ;
+//        //            }
+//        //        }
+//    }
+//    else if(what == RTMP_BODY_AUD_RAW)
+//    {
+//        audio_decode_loop_->Post(what, data, flush);
+//    }
+//    else
+//    {
+//        LogError("can't handle what:%d", what);
+//        delete data;
+//    }
+    audio_decode_loop_->Post(what, data, flush);
     int64_t diff = TimesUtil::GetTimeMillisecond() - cur_time;
     if(diff>5)
         LogInfo("audioCallback t:%ld", diff);

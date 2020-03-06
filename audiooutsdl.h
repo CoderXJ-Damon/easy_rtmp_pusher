@@ -24,11 +24,11 @@ public:
      RingBuffer *ring_buffer_;
      std::mutex lock_;//
 private:
-    SDL_AudioSpec wanted_spec;
+    SDL_AudioSpec spec;
     int sample_rate_ = 48000;
     int sample_fmt_ = AUDIO_S16SYS;
     int channels_ = 2;
-    SDL_AudioDeviceID audio_dev = 0;
+   
 };
 }
 #endif // AUDIOOUTSDL_H

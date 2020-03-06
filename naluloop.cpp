@@ -27,6 +27,7 @@ void NaluLoop::addmsg(LooperMessage *msg, bool flush)
             // 从I帧开始
             if(tempMsg->what == RTMP_BODY_VID_RAW && ((NaluStruct*)tempMsg->obj)->type == 5)
             {
+                LogWarn("drop msg, now have %d msg", msg_queue_.size());
                 break;
             }
             msg_queue_.pop_front();
@@ -36,8 +37,9 @@ void NaluLoop::addmsg(LooperMessage *msg, bool flush)
         }
     }
     msg_queue_.push_back(msg);
+    if(msg_queue_.size() > max_nalu_/3)
+        LogWarn("have %d msg cache, it will cause delay", msg_queue_.size());
     queue_mutex_.unlock();
     head_data_available_->post();
-//    LogInfo("post msg %d, size:%d", msg->what, msg_queue_.size());
 }
 }
