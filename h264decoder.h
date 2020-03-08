@@ -13,7 +13,7 @@ public:
     virtual RET_CODE Decode(uint8_t *in, int32_t in_len, uint8_t *out, int32_t &out_len);
     virtual int GetWidth() { return ctx_->width; }
     virtual int GetHeight()		{ return ctx_->height;		}
-    virtual bool  IsKeyFrame()	{ return picture_->key_frame;	}
+    virtual bool  IsKeyFrame()	{ return bool(picture_->key_frame);	}
 private:
     AVCodec 	*codec_;
     AVCodecContext	*ctx_;

@@ -331,7 +331,7 @@ public:
         else if (strcasecmp(val,(char *)"true")==0)
             return true;
         //Return value
-        return atoi(val);
+        return (atoi(val));
     }
 };
 inline void* malloc32(size_t size)

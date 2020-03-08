@@ -22,21 +22,24 @@ SOURCES += main_play.cpp \
     naluloop.cpp \
     pushwork.cpp \
     audiocapturer.cpp \
-    captuerelooper.cpp \
+     commonlooper.cpp \	
     mediabase.cpp \
     aacrtmppackager.cpp \
     videocapturer.cpp \
-    rtmpplayer.cpp \
-    audiodecode.cpp \
-    aacdecoder.cpp \
-    h264decoder.cpp \
     videooutsdl.cpp \
     audiooutsdl.cpp \
     ringbuffer.cpp \
+    avsync.cpp \
+    framequeue.cpp \
+     rtmpplayer.cpp \
+    aacdecoder.cpp \
+    h264decoder.cpp \
     audiodecodeloop.cpp \
     pullwork.cpp \
-    videodeccodeloop.cpp \
-    avsync.cpp
+    videodeccodeloop.cpp \	
+    videooutputloop.cpp \
+    avtimebase.cpp 
+    
 win32 {
 INCLUDEPATH += $$PWD/ffmpeg-4.2.1-win32-dev/include
 LIBS += $$PWD/ffmpeg-4.2.1-win32-dev/lib/avformat.lib   \
@@ -64,7 +67,6 @@ HEADERS += \
     aacencoder.h \
     audio.h \
     audioresample.h \
-    codecs.h \
     dlog.h \
     rtmppusher.h \
     looper.h \
@@ -75,19 +77,21 @@ HEADERS += \
     naluloop.h \
     pushwork.h \
     audiocapturer.h \
-    captuerelooper.h \
+    commonlooper.h \
     timeutil.h \
     rtmppackager.h \
     aacrtmppackager.h \
     videocapturer.h \
     rtmpplayer.h \
-    audiodecode.h \
-    aacdecoder.h \
-    h264decoder.h \
     videooutsdl.h \
     audiooutsdl.h \
     ringbuffer.h \
+    avsync.h \
+    avtimebase.h\
+    aacdecoder.h \
+    h264decoder.h \
     audiodecodeloop.h \
     pullwork.h \
     videodecodeloop.h \
-    avsync.h
+    videooutputloop.h \
+    framequeue.h 

@@ -10,7 +10,9 @@ void* Looper::trampoline(void* p)
     return NULL;
 }
 
-Looper::Looper() {
+Looper::Looper(const int deque_max_size)
+    :deque_max_size_(deque_max_size)
+{
     LogInfo("at Looper create");
     head_data_available_ = new Semaphore(0);
     worker_ = new std::thread(trampoline, this);
@@ -42,13 +44,21 @@ void Looper::addmsg(LooperMessage *msg, bool flush)
     // 获取锁，发数据
     int64_t t1 = TimesUtil::GetTimeMillisecond();
     queue_mutex_.lock();
-    if (flush) {
-        msg_queue_.clear();
+    if (flush || msg_queue_.size() > deque_max_size_) {
+        LogWarn("flush queue, size:%d", msg_queue_.size());
+        while(msg_queue_.size() > 0)
+        {
+            LooperMessage * tmp_msg = msg_queue_.front();
+            msg_queue_.pop_front();
+            delete tmp_msg->obj;
+            delete tmp_msg;
+        }
     }
+
     msg_queue_.push_back(msg);
     queue_mutex_.unlock();
     // 发送数据进行通知
-    LogDebug("post msg %d, size:%d", msg->what, msg_queue_.size());
+    LogInfo("post msg %d, size:%d", msg->what, msg_queue_.size());
 
     head_data_available_->post();
     //    LogInfo("Looper post");

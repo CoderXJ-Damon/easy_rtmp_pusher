@@ -1,13 +1,13 @@
 ﻿#ifndef AUDIOCAPTURER_H
 #define AUDIOCAPTURER_H
 #include <functional>
-#include "captuerelooper.h"
+#include "commonlooper.h"
 #include "mediabase.h"
 namespace LQF
 {
 using std::function;
 
-class AudioCapturer : public CaptureLooper
+class AudioCapturer : public CommonLooper
 {
 public:
     AudioCapturer();

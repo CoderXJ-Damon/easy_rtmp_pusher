@@ -1,153 +1,232 @@
 ﻿#ifndef AVSYNC_H
 #define AVSYNC_H
-
+#ifdef __cplusplus
+extern "C"
+{
 #include "libavutil/time.h"
-
+}
+#endif
 #include "mediabase.h"
 
+/**
+* 第一版本：仅支持audio master的方式
+* 和ffplay不一样，我们统一使用毫秒的方式
+*/
 
-//namespace LQF {
-//const int64_t AV_NOSYNC_THRESHOLD = 40;
-//enum {
-//    AV_SYNC_AUDIO_MASTER, /* default choice */
-//    AV_SYNC_VIDEO_MASTER,
-//    AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
-//};
 
-//enum AV_SYNC {
-//    AV_SYNC_FRAME_FREE_RUN, // 有就播放，不做同步
-//    AV_SYNC_FRAME_HOLD,     // 等待到时间再播放
-//    AV_SYNC_FRAME_DROP,     // 丢掉当前帧
-//    AV_SYNC_FRAME_PLAY      // 正常播放
-//};
+namespace LQF {
+const int64_t AV_NOSYNC_THRESHOLD = 40;
+enum {
+    AV_SYNC_AUDIO_MASTER, /* default choice */
+    AV_SYNC_VIDEO_MASTER,
+    AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
+};
 
-////class AVSync;
-////class Clock
-////{
-////public:
-////    Clock(int *queue_serial)
-////    {
-////        speed_ = 1.0;
-////        paused_ = 0;
-////        queue_serial_ = queue_serial;
-////        set_clock(NAN, -1);
-////    }
-////    double get_clock()
-////    {
-////        if (*queue_serial_ != serial_)
-////            return NAN;
-////        if (paused_) {
-////            return pts_;
-////        } else {
-////            double time = av_gettime_relative() / 1000000.0;
-////            return pts_drift_ + time - (time - last_updated_) * (1.0 - speed_);
-////        }
-////    }
-////    void set_clock_at(double pts, int serial, double time)
-////    {
-////        pts_ = pts;
-////        last_updated_ = time;
-////        pts_drift_ = pts_ - time;
-////        serial_ = serial;
-////    }
-////    void set_clock(double pts, int serial)
-////    {
-////        double time = av_gettime_relative() / 1000000.0;
-////        set_clock_at(pts, serial, time);
-////    }
-////    void init_clock(Clock *c, int *queue_serial)
-////    {
-////        speed_ = 1.0;
-////        paused_ = 0;
-////        queue_serial_ = queue_serial;
-////        set_clock(NAN, -1);
-////    }
-////    void sync_clock_to_slave(Clock *slave)
-////    {
-////        double clock = get_clock();
-////        double slave_clock = slave->get_clock();
-////        if (!isnan(slave_clock) && (isnan(clock) || fabs(clock - slave_clock) > AV_NOSYNC_THRESHOLD))
-////            slave->set_clock(slave_clock, slave->serial_);
-////    }
-////    int get_master_sync_type(AVSync *avsync)
-////    {
-////        if (avsync->av_sync_type == AV_SYNC_VIDEO_MASTER) {
-////            if (avsync->has_video)
-////                return AV_SYNC_VIDEO_MASTER;
-////            else
-////                return AV_SYNC_AUDIO_MASTER;
-////        } else if (avsync->av_sync_type == AV_SYNC_AUDIO_MASTER) {
-////            if (avsync->has_audio)
-////                return AV_SYNC_AUDIO_MASTER;
-////            else
-////                return AV_SYNC_EXTERNAL_CLOCK;
-////        } else {
-////            return AV_SYNC_EXTERNAL_CLOCK;
-////        }
-////    }
-////    /* get the current master clock value */
-////    static double get_master_clock(AVSync *avsync)
-////    {
-////        double val;
+enum AV_FRAME_SYNC_RESULT {
+    AV_FRAME_FREE_RUN, // 有就播放，不做同步
+    AV_FRAME_HOLD,     // 等待到时间再播放
+    AV_FRAME_DROP,     // 丢掉当前帧
+    AV_FRAME_PLAY      // 正常播放
+};
 
-////        switch (get_master_sync_type(avsync)) {
-////        case AV_SYNC_VIDEO_MASTER:
-////            val = avsync->vidclk->get_clock();
-////            break;
-////        case AV_SYNC_AUDIO_MASTER:
-////            val = avsync->audclk->get_clock();
-////            break;
-////        default:
-////            val = avsync->extclk->get_clock();
-////            break;
-////        }
-////        return val;
-////    }
-////public:
-////    double pts_;           /* clock base */
-////    double pts_drift_;     /* clock base minus time at which we updated the clock */
-////    double last_updated_;
-////    double speed_;
-////    int serial_;           /* clock is based on a packet with this serial */
-////    int paused_;
-////    int *queue_serial_;    /* pointer to the current packet queue serial, used for obsolete clock*/
-////};
+const int MAX_NAME_SIZE = 20;
+const int64_t INVALID_PTS_VALUE = 0x1fffffffffffffff;
+class Clock
+{
 
-//class AVSync
-//{
-//public:
-//    AVSync()
-//    {
+public:
+    Clock(int *queue_serial, const char *name)
+    {
+        speed_ = 1.0;
+        paused_ = 0;
+        queue_serial_ = queue_serial;
+        if (name) {
+            strncpy(name_, name, MAX_NAME_SIZE);
+            name_[MAX_NAME_SIZE] = '\0';
+        } else {
+            name_[0] = '\0';
+        }
+        set_clock(INVALID_PTS_VALUE, -1);
+    }
+    int64_t get_clock()
+    {
+//        if (*queue_serial_ != serial_)
+//            return INVALID_PTS_VALUE;
+        if (paused_) {
+            return pts_;
+        } else {
+            int64_t time = av_gettime_relative() / 1000;
+            return (int64_t)(pts_drift_ + time - (time - last_updated_) * (1.0 - speed_));
+        }
+    }
+    void set_clock_at(int64_t pts, int serial, int64_t time)
+    {
+        pts_ = pts;
+        last_updated_ = time;
+        pts_drift_ = pts_ - time;
+        serial_ = serial;
+    }
+    void set_clock(int64_t pts, int serial)
+    {
+        int64_t time = av_gettime_relative() / 1000;
+        set_clock_at(pts, serial, time);
+    }
+    void init_clock(int *queue_serial)
+    {
+        speed_ = 1.0;
+        paused_ = 0;
+        queue_serial_ = queue_serial;
+        set_clock(INVALID_PTS_VALUE, -1);
+    }
+    void sync_clock_to_slave(Clock *slave)
+    {
+        int64_t clock = get_clock();
+        int64_t slave_clock = slave->get_clock();
+        if (!isInvalid(slave_clock) && (isInvalid(clock) || fabs(clock - slave_clock) > AV_NOSYNC_THRESHOLD))
+            slave->set_clock(slave_clock, slave->serial_);
+    }
+    bool isInvalid(const int64_t pts) {
+        return pts == INVALID_PTS_VALUE;
+    }
 
-//    }
-//    ~AVSync()
-//    {
+public:
+    int64_t pts_;           /* clock base */
+    int64_t pts_drift_;     /* clock base minus time at which we updated the clock */
+    int64_t last_updated_;
+    double speed_;
+    int serial_;           /* clock is based on a packet with this serial */
+    int paused_;
+    int *queue_serial_;    /* pointer to the current packet queue serial, used for obsolete clock*/
+    char name_[MAX_NAME_SIZE+1];
 
-//    }
-//    void update_video_pts(double pts, int serial) {
-//        vidclk->set_clock(pts, serial);
-//    }
-//    void update_audio_pts(double pts, int serial) {
-//        audclk->set_clock(pts, serial);
-//    }
-//    AV_SYNC GetVideoSync()
-//    {
+};
 
-//    }
+class AVSync
+{
+public:
 
-//    //sync
-//      int             av_sync_type;
+    AVSync()
+    {
 
-//      double          audio_clock;
-//      double          frame_timer;
-//      double          frame_last_pts;
-//      double          frame_last_delay;
+    }
+    virtual ~AVSync()
+    {
+        if(!audclk) {
+            delete audclk;
+        }
+        if(!vidclk) {
+            delete vidclk;
+        }
+        if(!extclk) {
+            delete extclk;
+        }
+    }
+    bool IsInit() {
+        return is_init_;
+    }
+    // 设置音视频同步类型
+    RET_CODE Init(const int av_sync_type) {
+        av_sync_type_ = av_sync_type;
+        // 初始化时钟
+        audclk = new Clock(&aud_queue_serial_, "audclk");
+        vidclk = new Clock(&vid_queue_serial_, "vidclk");
+        extclk = new Clock(&ext_queue_serial_, "extclk");
+        if(!audclk || !vidclk || !extclk) {
+            LogError("new Clock failed");
+            return RET_ERR_OUTOFMEMORY;
+        }
+        update_audio_pts(0, 0);
+        is_init_ = true;
+        return RET_OK;
+    }
+    int get_master_sync_type()
+    {
+        if (av_sync_type_ == AV_SYNC_VIDEO_MASTER) {
+            if (has_video_)
+                return AV_SYNC_VIDEO_MASTER;
+            else
+                return AV_SYNC_AUDIO_MASTER;
+        } else if (av_sync_type_ == AV_SYNC_AUDIO_MASTER) {
+            if (has_audio_)
+                return AV_SYNC_AUDIO_MASTER;
+            else
+                return AV_SYNC_EXTERNAL_CLOCK;
+        } else {
+            return AV_SYNC_EXTERNAL_CLOCK;
+        }
+    }
+    /* get the current master clock value */
+    int64_t get_master_clock()
+    {
+        int64_t val;
 
-//      double          video_clock; ///<pts of last decoded frame / predicted pts of next decoded frame
-//      double          video_current_pts; ///<current displayed pts (different from video_clock if frame fifos are used)
-//      int64_t         video_current_pts_time;  ///<time (av_gettime) at which we updated video_current_pts - used to have running video pts
-//};
+        switch (get_master_sync_type()) {
+        case AV_SYNC_VIDEO_MASTER:
+            val = vidclk->get_clock();
+            break;
+        case AV_SYNC_AUDIO_MASTER:
+            val = audclk->get_clock();
+            break;
+        default:
+            val = extclk->get_clock();
+            break;
+        }
+        return val;
+    }
 
-//}
+    void update_video_pts(const int64_t pts, const int serial) {
+        LogInfo("video pts:%lld", pts);
+        vidclk->set_clock(pts, serial);
+    }
+    void update_audio_pts(const int64_t pts, const int serial) {
+        LogInfo("audio pts:%lld", pts);
+        if(abs(pts - audclk->get_clock()) > audio_frame_druation_/2)  {
+            audclk->set_clock(pts, serial);
+        }
+    }
+    AV_FRAME_SYNC_RESULT GetVideoSyncResult(const int64_t pts, const int duration)
+    {
+        video_frame_druation_ = duration;
+        int64_t diff = pts - get_master_clock();
+//        LogInfo("vpts:%lld, diff:%lld", pts, diff);
+        if(diff > 0 && diff < video_frame_druation_*10) {
+            return AV_FRAME_HOLD;
+        } else if(diff<=0 && diff >-video_frame_druation_/2){
+            return AV_FRAME_PLAY;
+        }
+        else if(diff <= -video_frame_druation_/2){
+            return AV_FRAME_DROP;
+        } else {
+            // 其他情况自由奔放地播放
+            LogWarn("video free run, diff:%lld", diff);
+            return AV_FRAME_FREE_RUN;
+        }
+    }
+
+    int             av_sync_type_ = AV_SYNC_AUDIO_MASTER;
+    int             has_video_ = 1;
+    int             has_audio_ = 1;
+    bool is_init_ = false;
+    Clock *audclk = NULL;
+    Clock *vidclk = NULL;
+    Clock *extclk = NULL;
+    int aud_queue_serial_ = 0;
+    int vid_queue_serial_ = 0;
+    int ext_queue_serial_ = 0;
+    int64_t audio_frame_druation_ = 22;
+    int64_t video_frame_druation_ = 40;
+
+    int64_t          audio_clock_;
+    int64_t          frame_timer;
+    int64_t          frame_last_pts;
+    int64_t          frame_last_delay;
+
+    int64_t          video_clock; ///<pts of last decoded frame / predicted pts of next decoded frame
+    int64_t          video_current_pts; ///<current displayed pts (different from video_clock if frame fifos are used)
+    int64_t         video_current_pts_time;  ///<time (av_gettime) at which we updated video_current_pts - used to have running video pts
+    static AVSync  s_avsync_;
+};
+//AVSync *AVSync::s_avsync_ = NULL;
+}
 
 #endif // AVSYNC_H

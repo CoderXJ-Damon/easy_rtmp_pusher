@@ -1,22 +1,22 @@
-﻿#include "captuerelooper.h"
+﻿#include "commonlooper.h"
 #include "dlog.h"
 
 namespace LQF
 {
-void* CaptureLooper::trampoline(void* p) {
-    LogInfo("at CaptureLooper trampoline");
-    ((CaptureLooper*)p)->Loop();
+void* CommonLooper::trampoline(void* p) {
+    LogInfo("at CommonLooper trampoline");
+    ((CommonLooper*)p)->Loop();
     return NULL;
 }
 
-CaptureLooper::CaptureLooper()
+CommonLooper::CommonLooper()
 {
     request_exit_ = false;
 }
 
-RET_CODE CaptureLooper::Start()
+RET_CODE CommonLooper::Start()
 {
-    LogInfo("at CaptureLooper create");
+    LogInfo("at CommonLooper create");
     worker_ = new std::thread(trampoline, this);
     if(worker_ == NULL)
     {
@@ -29,17 +29,17 @@ RET_CODE CaptureLooper::Start()
 }
 
 
-CaptureLooper::~CaptureLooper()
+CommonLooper::~CommonLooper()
 {
     if (running_)
     {
-        LogInfo("CaptureLooper deleted while still running. Some messages will not be processed");
+        LogInfo("CommonLooper deleted while still running. Some messages will not be processed");
         Stop();
     }
 }
 
 
-void CaptureLooper::Stop()
+void CommonLooper::Stop()
 {
     request_exit_ = true;
     if(worker_)

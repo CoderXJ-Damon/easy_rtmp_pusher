@@ -140,7 +140,7 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     default:
         break;
     }
-     LogDebug("leave");
+    LogDebug("leave");
 }
 
 bool RTMPPusher::SendMetadata(FLVMetadataMsg *metadata)
@@ -209,7 +209,7 @@ bool RTMPPusher::sendH264SequenceHeader(VideoSequenceHeaderMsg *seq_header)
     {
         return false;
     }
-    char body[1024] = { 0 };
+    uint8_t body[1024] = { 0 };
 
     int i = 0;
     body[i++] = 0x17; // 1:keyframe  7:AVC
@@ -336,12 +336,12 @@ int RTMPPusher::sendPacket(unsigned int packet_type, unsigned char *data,
     if(packet_type == RTMP_PACKET_TYPE_AUDIO)
     {
         packet.m_nChannel = RTMP_AUDIO_CHANNEL;
-               LogInfo("audio packet timestamp:%u", timestamp);
+        //               LogInfo("audio packet timestamp:%u", timestamp);
     }
     else if(packet_type == RTMP_PACKET_TYPE_VIDEO)
     {
         packet.m_nChannel = RTMP_VIDEO_CHANNEL;
-              LogInfo("video packet timestamp:%u, size:%u", timestamp, size);
+        //              LogInfo("video packet timestamp:%u, size:%u", timestamp, size);
     }
     else
     {

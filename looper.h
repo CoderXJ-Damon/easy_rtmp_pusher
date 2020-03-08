@@ -23,7 +23,7 @@ struct LooperMessage {
 class Looper
 {
 public:
-    Looper();
+    Looper(const int deque_max_size = 30);
     virtual ~Looper();
     //flush 是否清空消息队列
     void Post(int what, MsgBaseObj *data, bool flush = false);
@@ -40,6 +40,7 @@ protected:
     Semaphore *head_data_available_;
     std::mutex queue_mutex_;
     bool running_;
+    int deque_max_size_ = 30;
 };
 
 }

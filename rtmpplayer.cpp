@@ -4,6 +4,7 @@
 #include "dlog.h"
 #include "mediabase.h"
 #include "timeutil.h"
+#include "avtimebase.h"
 namespace LQF
 {
 RTMPPlayer::RTMPPlayer():RTMPBase(RTMP_BASE_TYPE_PLAY)
@@ -156,6 +157,7 @@ void RTMPPlayer::Stop()
 
 void* RTMPPlayer::readPacketThread()
 {
+    AVPlayTime *play_time = AVPlayTime::GetInstance();
     //此处可以优化
     RTMPPacket packet = {0};
     int64_t cur_time = TimesUtil::GetTimeMillisecond();
@@ -215,6 +217,10 @@ void* RTMPPlayer::readPacketThread()
                 // SPS/PPS sequence
                 if (sequence)
                 {
+                    LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
+                            play_time->getAvcHeaderTag(),
+                            play_time->getCurrenTime());
+                    is_got_video_sequence_ = true;
                     uint32_t offset = 10;
                     uint32_t sps_num = packet.m_body[offset++] & 0x1f;
                     if(sps_num>0)
@@ -263,6 +269,19 @@ void* RTMPPlayer::readPacketThread()
                 // Nalu frames
                 else
                 {
+                    if(keyframe && !is_got_video_iframe_) {
+                        is_got_video_iframe_ = true;
+                        LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
+                                play_time->getAvcIFrameTag(),
+                                play_time->getCurrenTime());
+                    }
+                    if(got_video_frames_++ < PRINT_MAX_FRAMES) {
+                        // 打印前PRINT_MAX_FRAMES帧的时间信息，包括i帧
+                        LogInfo("%s:%s:k:%d:t:%u", play_time->getRtmpTag(),
+                                play_time->getAvcFrameTag(),
+                                keyframe,
+                                play_time->getCurrenTime());
+                    }
 
                     uint32_t offset = 5;
                     uint8_t ch0 = packet.m_body[offset];
@@ -288,6 +307,7 @@ void* RTMPPlayer::readPacketThread()
                             video_pre_pts_ += packet.m_nTimeStamp;
                     }
                     nalu->pts = video_pre_pts_;
+//                     LogInfo("rtmp vpts:%u", nalu->pts);
                     video_callable_object_(RTMP_BODY_VID_RAW, nalu, false);
                     offset += data_len;
                 }
@@ -306,6 +326,10 @@ void* RTMPPlayer::readPacketThread()
                 // AAC sequence
                 if (sequence)
                 {
+                    LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
+                            play_time->getAacHeaderTag(),
+                            play_time->getCurrenTime());
+
                     format = (packet.m_body[0] & 0xf0) >> 4;
                     samplerate = (packet.m_body[0] & 0x0c) >> 2;
                     sampledepth = (packet.m_body[0] & 0x02) >> 1;
@@ -339,6 +363,14 @@ void* RTMPPlayer::readPacketThread()
                 // Audio frames
                 else
                 {
+                    if(got_audio_frames_++ < PRINT_MAX_FRAMES) {
+                        // 打印前PRINT_MAX_FRAMES帧的时间信息，包括i帧
+                        LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
+                                play_time->getAacDataTag(),
+                                play_time->getCurrenTime());
+                    }
+
+
                     // ADTS(7 bytes) + AAC data
                     uint32_t data_len = packet.m_nBodySize - 2 + 7;
                     uint8_t adts[7];
@@ -366,13 +398,18 @@ void* RTMPPlayer::readPacketThread()
                             audio_pre_pts_ += packet.m_nTimeStamp;
                     }
                     aud_raw->pts = audio_pre_pts_;
+//                    LogInfo("rtmp apts:%u", aud_raw->pts);
                     audio_callable_object_(RTMP_BODY_AUD_RAW, aud_raw, false);
                 }
                 //                LogInfo("aud finish  t:%ld\n", TimesUtil::GetTimeMillisecond() - cur_time);
             }
             else if (packet.m_packetType == RTMP_PACKET_TYPE_INFO)
             {
-                LogInfo("onReadVideoAndAudioInfo ");
+//                LogInfo("onReadVideoAndAudioInfo ");
+                LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
+                        play_time->getMetadataTag(),
+                        play_time->getCurrenTime());
+                is_got_metadta_ = true;
                 parseScriptTag(packet);
                 if(video_width > 0 && video_height>0)
                 {

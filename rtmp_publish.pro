@@ -3,7 +3,7 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 #DEFINES += _WIN32
-SOURCES += \
+SOURCES += main_publish.cpp\
     librtmp/amf.c \
     librtmp/hashswf.c \
     librtmp/log.c \
@@ -22,7 +22,7 @@ SOURCES += \
     naluloop.cpp \
     pushwork.cpp \
     audiocapturer.cpp \
-    captuerelooper.cpp \
+    commonlooper.cpp \
     mediabase.cpp \
     aacrtmppackager.cpp \
     videocapturer.cpp \
@@ -30,7 +30,8 @@ SOURCES += \
     audiooutsdl.cpp \
     ringbuffer.cpp \    
     avsync.cpp \
-    main_publish.cpp
+    framequeue.cpp \ 
+    avtimebase.cpp
 win32 {
 INCLUDEPATH += $$PWD/ffmpeg-4.2.1-win32-dev/include
 LIBS += $$PWD/ffmpeg-4.2.1-win32-dev/lib/avformat.lib   \
@@ -68,7 +69,7 @@ HEADERS += \
     naluloop.h \
     pushwork.h \
     audiocapturer.h \
-    captuerelooper.h \
+    commonlooper.h \
     timeutil.h \
     rtmppackager.h \
     aacrtmppackager.h \
@@ -78,4 +79,5 @@ HEADERS += \
     audiooutsdl.h \
     ringbuffer.h \
     avsync.h \
-    avtimebase.h
+    avtimebase.h\
+    framequeue.h 

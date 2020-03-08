@@ -1,6 +1,8 @@
 ﻿#include "audiooutsdl.h"
 #include "dlog.h"
 #include "timeutil.h"
+#include "avsync.h"
+#include "avtimebase.h"
 namespace LQF {
 
 static void fill_audio_pcm(void *udata, Uint8 *stream, int len)
@@ -9,39 +11,99 @@ static void fill_audio_pcm(void *udata, Uint8 *stream, int len)
     AudioOutSDL *audio_out = (AudioOutSDL *)udata;
 
     int64_t cur_time = TimesUtil::GetTimeMillisecond();
-    LogInfo("callback fill audio t:%ld", cur_time - s_pre_time);
-    s_pre_time = cur_time;
-    audio_out->lock_.lock();
-    if(audio_out->ring_buffer_->getLength() < len) // 数据读取完毕
+//    LogInfo("callback fill audio t:%ld", cur_time - s_pre_time);
+    int copy_size = 0;
+
+    while (len > 0)
     {
-        LogError("getLength() < len, buf_size:%d",  audio_out->ring_buffer_->getLength());
-        audio_out->lock_.unlock();
-        return;
+
+        if(audio_out->audio_buf_index >= audio_out->audio_buf_size) {
+            // 帧缓存的数据已经被拷贝完毕，所以要解码才有数据
+            // 从队列中获取数据包并进行解码, 非暂停才去读取数据
+            if(audio_out->frame_queue_->Size() > 0 && !audio_out->paused)  {
+                if(audio_out->out_frames_++ < audio_out->PRINT_MAX_FRAME_OUT_TIME) {
+                    AVPlayTime *play_time = AVPlayTime::GetInstance();
+                    LogInfo("%s:c:%u:t:%u", play_time->getAoutTag(),
+                           audio_out->out_frames_, play_time->getCurrenTime());
+                }
+                Frame  *frame = audio_out->frame_queue_->Peek();
+                audio_out->audio_clock = frame->pts_;
+                if(frame->Size() > audio_out->audio_buf1_size) {
+                    delete [] audio_out->audio_buf1;
+                    audio_out->audio_buf1_size = frame->Size();
+                    audio_out->audio_buf1 = new uint8_t[audio_out->audio_buf1_size];
+                }
+                memcpy((uint8_t *)audio_out->audio_buf1, frame->Data(), frame->Size());
+                audio_out->audio_buf_index = 0;
+                audio_out->audio_buf = audio_out->audio_buf1;
+                audio_out->audio_buf_size = frame->Size();
+                if(len >= (audio_out->audio_buf_size - audio_out->audio_buf_index))
+                {
+                    copy_size = audio_out->audio_buf_size - audio_out->audio_buf_index;
+                }
+                else
+                {
+                    copy_size = len;
+                }
+                memset(stream, 0, copy_size);
+                /* 处理音量，实际上是改变PCM数据的幅值 */
+                SDL_MixAudioFormat(stream, (uint8_t *)audio_out->audio_buf + audio_out->audio_buf_index,
+                                   AUDIO_S16SYS, copy_size, audio_out->audio_volume);
+//                memcpy(stream, (uint8_t *)audio_out->audio_buf + audio_out->audio_buf_index, copy_size);
+                audio_out->audio_buf_index += copy_size;
+                len -= copy_size;
+                stream += copy_size;
+
+                audio_out->frame_queue_->Next();    // 释放帧
+                if(len<=0)
+                    break;
+            }  else {
+                 LogInfo("no pcm data");
+                // 如果没有数据则静音
+                memset(stream, 0, len);
+                len = 0;
+                return;
+            }
+        } else {
+            if(len >= (audio_out->audio_buf_size - audio_out->audio_buf_index))
+            {
+                copy_size = audio_out->audio_buf_size - audio_out->audio_buf_index;
+            }
+            else
+            {
+                copy_size = len;
+            }
+            memset(stream, 0, copy_size);
+            /* 处理音量，实际上是改变PCM数据的幅值 */
+            SDL_MixAudioFormat(stream, (uint8_t *)audio_out->audio_buf + audio_out->audio_buf_index,
+                               AUDIO_S16SYS, copy_size, audio_out->audio_volume);
+            audio_out->audio_buf_index += copy_size;
+            len -= copy_size;
+            stream += copy_size;
+        }
     }
-
-    SDL_memset(stream, 0, len);
-
-    int ret = audio_out->ring_buffer_->read((char *)stream, len);     //
-    LogError("size:%d, read:%d, buf_size:%d", len, ret, audio_out->ring_buffer_->getLength());
-    audio_out->lock_.unlock();
+    audio_out->avsync_->update_audio_pts(audio_out->audio_clock, 1);
 }
 
-AudioOutSDL::AudioOutSDL()
+AudioOutSDL::AudioOutSDL(AVSync *avsync)
+    :avsync_(avsync)
 {
-
 }
 
 AudioOutSDL::~AudioOutSDL()
 {
     LogInfo("~AudioOutSDL()");
-    if(ring_buffer_)
+    if(audio_buf1)
     {
         SDL_PauseAudio(1);
         // 关闭清理
         // 关闭音频设备
         SDL_CloseAudio();
         SDL_Quit();
-        delete ring_buffer_;
+         delete [] audio_buf1;
+    }
+    if(frame_queue_) {
+        delete frame_queue_;
     }
 }
 RET_CODE AudioOutSDL::Init(const Properties &properties)
@@ -50,7 +112,9 @@ RET_CODE AudioOutSDL::Init(const Properties &properties)
     sample_fmt_ = properties.GetProperty("sample_fmt", AUDIO_S16SYS);
     channels_ = properties.GetProperty("channels", 2);
 
-    ring_buffer_ = new RingBuffer(1024 * 4 * 40); // 最多存储4帧数据
+    audio_buf1 = new uint8_t[audio_buf1_size];  // 最大帧buffer
+    frame_queue_ = new FrameQueue();
+    frame_queue_->Init(SAMPLE_QUEUE_SIZE, 0);
     //SDL initialize
     if(SDL_Init(SDL_INIT_AUDIO))    // 支持AUDIO
     {
@@ -76,16 +140,28 @@ RET_CODE AudioOutSDL::Init(const Properties &properties)
     SDL_PauseAudio(0);
     return RET_OK;
 }
-RET_CODE AudioOutSDL::Output(const uint8_t *pcm_buf, const uint32_t size)
+
+RET_CODE AudioOutSDL::PushFrame(const uint8_t *data,
+                                const uint32_t size, const int64_t pts)
 {
-    lock_.lock();
-    int ret = ring_buffer_->write((char *)pcm_buf, size);
-    if(ret != size)
-    {
-        // LogError("size:%d, write:%d", size, ret);
+    if(frame_queue_) {
+        Frame *frame = frame_queue_->PeekWritable();
+        if(!frame) {
+            LogError("PeekWritable failed");
+            return RET_FAIL;
+        }
+        if(frame->Init(data, size, pts) != RET_OK) {
+            LogError("Frame Init failed");
+            return RET_FAIL;
+        }
+
+        //        frame->duration_ = 1000;    // 帧间隔
+        pre_pts_ = pts;
+        frame_queue_->Push();       // 真正插入一帧
+    } else {
+        LogError("frame_queue_ is null");
+        return RET_FAIL;
     }
-    lock_.unlock();
-    return RET_OK;
 }
 
 void AudioOutSDL::Release()

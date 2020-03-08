@@ -10,22 +10,22 @@ namespace LQF {
 class RTMPPlayer : public RTMPBase
 {
 public:
+    RTMPPlayer();
+    virtual ~RTMPPlayer();
     RET_CODE Start();
     void Stop();
 	void*  readPacketThread();
-    // 收到数据包调用回调
+    // 收到音频数据包调用回调
     void AddAudioCallback(std::function<void(int what, MsgBaseObj *data, bool flush)> callable_object)
     {
         audio_callable_object_ = callable_object;
     }
-    // 收到数据包调用回调
+    // 收到视频数据包调用回调
     void AddVideoCallback(std::function<void(int what, MsgBaseObj *data, bool flush)> callable_object)
     {
         video_callable_object_ = callable_object;
     }
-public:
-    RTMPPlayer();
-    virtual ~RTMPPlayer();
+	
 private:
     
     void parseScriptTag(RTMPPacket &packet);
@@ -54,6 +54,16 @@ private:
 
     int64_t audio_pre_pts_ = -1;
     int64_t video_pre_pts_ = -1;
+
+    // 性能指标统计
+    uint32_t PRINT_MAX_FRAMES = 30;    // 打印前xx帧，根据实际调试情况进行修改，如果打印太多影响性能
+    bool is_got_metadta_ = false;
+    bool is_got_video_sequence_ = false;    // video sequence
+    bool is_got_video_iframe_ = false; //打印第一次收到i帧
+    uint32_t got_video_frames_ = 0;     // 对接收的video帧进行计数, 打印前xx帧的时间
+
+    bool is_got_audio_sequence_ = false;
+    uint32_t got_audio_frames_ = 0; //
 };
 }
 

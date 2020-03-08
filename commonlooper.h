@@ -1,14 +1,14 @@
-﻿#ifndef CAPTUERELOOPER_H
-#define CAPTUERELOOPER_H
+﻿#ifndef COMMONLOOPER_H
+#define COMMONLOOPER_H
 #include <thread>
 #include "mediabase.h"
 namespace LQF
 {
-class CaptureLooper
+class CommonLooper
 {
 public:
-    CaptureLooper();
-    virtual ~CaptureLooper();
+    CommonLooper();
+    virtual ~CommonLooper();
     virtual RET_CODE Start();
     virtual void Stop();
     virtual void Loop() = 0;
@@ -23,4 +23,4 @@ protected:
 
 }
 
-#endif // CAPTUERELOOPER_H
+#endif // COMMONLOOPER_H

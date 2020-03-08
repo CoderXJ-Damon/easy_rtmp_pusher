@@ -1,4 +1,5 @@
 ﻿#include "VideoDecodeLoop.h"
+#include "avtimebase.h"
 namespace LQF
 {
 VideoDecodeLoop::VideoDecodeLoop()
@@ -13,8 +14,6 @@ VideoDecodeLoop::~VideoDecodeLoop()
         delete h264_decoder_;
     if(yuv_buf_)
         delete [] yuv_buf_;
-    if(video_out_sdl_)
-        delete video_out_sdl_;
 }
 
 RET_CODE VideoDecodeLoop::Init(const Properties &properties)
@@ -42,37 +41,17 @@ RET_CODE VideoDecodeLoop::Init(const Properties &properties)
 
 RET_CODE VideoDecodeLoop::Output(const uint8_t *video_buf, const uint32_t size)
 {
-    if(video_out_sdl_)
-        return video_out_sdl_->Output(video_buf, size);
-    else
-        return RET_FAIL;
+//    if(video_out_sdl_)
+//        return video_out_sdl_->Output(video_buf, size);
+//    else
+//        return RET_FAIL;
+    return RET_OK;
 }
 
 void VideoDecodeLoop::handle(int what, MsgBaseObj *data)
 {
     if(what == RTMP_BODY_METADATA)
     {
-        if(!video_out_sdl_)
-        {
-            video_out_sdl_ = new VideoOutSDL();
-            if(!video_out_sdl_)
-            {
-                LogError("new VideoOutSDL() failed");
-                return;
-            }
-            Properties vid_out_properties;
-            FLVMetadataMsg *metadata = (FLVMetadataMsg *)data;
-            vid_out_properties.SetProperty("video_width", metadata->width);
-            vid_out_properties.SetProperty("video_height",  metadata->height);
-            vid_out_properties.SetProperty("win_x", 1000);
-            vid_out_properties.SetProperty("win_title", "pull video display");
-            delete metadata;
-            if(video_out_sdl_->Init(vid_out_properties) != RET_OK)
-            {
-                LogError("video_out_sdl Init failed");
-                return;
-            }
-        }
 
     }
     else if(what == RTMP_BODY_VID_CONFIG)
@@ -91,12 +70,20 @@ void VideoDecodeLoop::handle(int what, MsgBaseObj *data)
     }
     else
     {
+        if(decode_frames_++ < PRINT_MAX_FRAME_DECODE_TIME) {
+            AVPlayTime *play_time = AVPlayTime::GetInstance();
+            LogInfo("%s:c:%u:t:%u", play_time->getAcodecTag(),
+                    decode_frames_, play_time->getCurrenTime());
+        }
         NaluStruct *nalu = (NaluStruct *)data;
         yuv_buf_size_ = YUV_BUF_MAX_SIZE;
+        // 这里暂且只考虑没有B帧的情况
         if(h264_decoder_->Decode(nalu->data, nalu->size,
                                         yuv_buf_, yuv_buf_size_) == RET_OK)
         {
-            callable_object_(yuv_buf_, yuv_buf_size_);
+            callable_post_yuv_(yuv_buf_, yuv_buf_size_, nalu->pts);
+        } else {
+            LogWarn("decode no got frame");
         }
         delete nalu;     // 要手动释放资源
     }

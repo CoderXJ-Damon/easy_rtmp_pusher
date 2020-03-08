@@ -2,12 +2,12 @@
 #define VIDEOCAPTURER_H
 
 #include <functional>
-#include "captuerelooper.h"
+#include "commonlooper.h"
 #include "mediabase.h"
 
 namespace LQF {
 using std::function;
-class VideoCapturer: public CaptureLooper
+class VideoCapturer: public CommonLooper
 {
 public:
     VideoCapturer();

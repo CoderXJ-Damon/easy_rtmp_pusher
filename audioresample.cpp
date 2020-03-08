@@ -29,8 +29,8 @@ int AudioResampler::InitResampler(const AudioResampleParams & arp) {
     }
 
     if (resample_params_.src_sample_fmt == resample_params_.dst_sample_fmt &&
-        resample_params_.src_sample_rate == resample_params_.dst_sample_rate &&
-        resample_params_.src_channel_layout == resample_params_.dst_channel_layout)
+            resample_params_.src_sample_rate == resample_params_.dst_sample_rate &&
+            resample_params_.src_channel_layout == resample_params_.dst_channel_layout)
     {
         LogInfo("%s no resample needed, just use audio fifo",
                 logtag_.c_str());
@@ -103,7 +103,7 @@ int AudioResampler::SendResampleFrame(AVFrame *frame)
     }
 
     const int dst_nb_samples = av_rescale_rnd(swr_get_delay(swr_ctx_, resample_params_.src_sample_rate) + src_nb_samples,
-                                            resample_params_.src_sample_rate, resample_params_.dst_sample_rate, AV_ROUND_UP);
+                                              resample_params_.src_sample_rate, resample_params_.dst_sample_rate, AV_ROUND_UP);
     if (dst_nb_samples > resampled_data_size)
     {
         //resampled_data_
@@ -112,7 +112,7 @@ int AudioResampler::SendResampleFrame(AVFrame *frame)
             return AVERROR(ENOMEM);
     }
     int nb_samples = swr_convert(swr_ctx_, resampled_data_, dst_nb_samples,
-                                (const uint8_t **)src_data, src_nb_samples);
+                                 (const uint8_t **)src_data, src_nb_samples);
     return av_audio_fifo_write(audio_fifo_, (void **)resampled_data_, nb_samples);
 }
 
@@ -124,7 +124,7 @@ int AudioResampler::SendResampleFrame(uint8_t *in_pcm, const int in_size)
         return 0;
     }
     auto frame = shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p)
-                                        {if (p) av_frame_free(&p);});
+    {if (p) av_frame_free(&p);});
 
     frame->format = resample_params_.src_sample_fmt;
     frame->channel_layout = resample_params_.src_channel_layout;
@@ -145,7 +145,7 @@ shared_ptr<AVFrame> AudioResampler::ReceiveResampledFrame(int desired_size) {
 }
 
 int AudioResampler::ReceiveResampledFrame(vector<shared_ptr<AVFrame>> & frames,
-                                         int desired_size)
+                                          int desired_size)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     int ret = 0;

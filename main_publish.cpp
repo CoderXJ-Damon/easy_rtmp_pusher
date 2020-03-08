@@ -1,4 +1,8 @@
-﻿#include <stdio.h>
+﻿/**
+* 零声学院腾讯课堂：https://0voice.ke.qq.com
+* 课程咨询：QQ 326873713 Darren
+*/
+#include <stdio.h>
 #include <iostream>
 #include <memory>
 #include "dlog.h"
@@ -22,7 +26,7 @@ extern int testAacEncoder(const char *pcmFileName, const char* aacFileName);
 #undef main
 
 //#define RTMP_URL "rtmp://111.229.231.225/live/livestream"
-#define RTMP_URL "rtmp://192.168.1.11/live/livestream"
+#define RTMP_URL "rtmp://192.168.1.12/live/livestream"
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 //// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 int main(int argc, char* argv[])
@@ -75,7 +79,7 @@ int main(int argc, char* argv[])
 
 
 
-        int count = 0;
+//        int count = 0;
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 //            if(count++ > 1200)

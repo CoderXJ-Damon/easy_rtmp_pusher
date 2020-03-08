@@ -30,7 +30,7 @@ public:
     virtual RET_CODE EncodeOutput(uint8_t *out, uint32_t &size);
     virtual uint32_t GetRate()			{ return ctx_->sample_rate?ctx_->sample_rate:8000;}
     virtual int get_sample_rate()		{ return ctx_->sample_rate;				}
-    virtual int get_bit_rate()		{ return ctx_->bit_rate;				}
+    virtual int64_t get_bit_rate()		{ return ctx_->bit_rate;				}
     virtual uint64_t get_channel_layout()		{ return ctx_->channel_layout;				}
     //每通道需要的sample数量
     virtual uint32_t GetFrameSampleSize()

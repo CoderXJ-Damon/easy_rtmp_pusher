@@ -37,7 +37,11 @@ PushWork::~PushWork()
     if(pcm_s16le_fp_)
         fclose(pcm_s16le_fp_);
 }
-
+/**
+ * @brief PushWork::Init
+ * @param properties
+ * @return
+ */
 RET_CODE PushWork::Init(const Properties &properties)
 {
     // 音频test模式
@@ -359,12 +363,12 @@ void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
         if(h264_fp_)
         {
 
-            fwrite(start_code, 1, 4, h264_fp_);
-            fwrite(video_encoder_->get_sps_data(),
-                   video_encoder_->get_sps_size(), 1, h264_fp_);
-            fwrite(start_code, 1, 4, h264_fp_);
-            fwrite( video_encoder_->get_pps_data(),
-                    video_encoder_->get_pps_size(), 1, h264_fp_);
+//            fwrite(start_code, 1, 4, h264_fp_);
+//            fwrite(video_encoder_->get_sps_data(),
+//                   video_encoder_->get_sps_size(), 1, h264_fp_);
+//            fwrite(start_code, 1, 4, h264_fp_);
+//            fwrite( video_encoder_->get_pps_data(),
+//                    video_encoder_->get_pps_size(), 1, h264_fp_);
         }
     }
     // 进行编码
@@ -377,10 +381,10 @@ void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
         nalu->pts = AVPublishTime::GetInstance()->get_video_pts();
         rtmp_pusher->Post(RTMP_BODY_VID_RAW, nalu);
         LogDebug("YuvCallback Post");
-        fwrite(start_code, 1, 4, h264_fp_);
-        fwrite(video_nalu_buf,
-               video_nalu_size_, 1, h264_fp_);
-        fflush(h264_fp_);
+//        fwrite(start_code, 1, 4, h264_fp_);
+//        fwrite(video_nalu_buf,
+//               video_nalu_size_, 1, h264_fp_);
+//        fflush(h264_fp_);
     }
 }
 }
