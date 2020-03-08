@@ -72,7 +72,7 @@ void VideoDecodeLoop::handle(int what, MsgBaseObj *data)
     {
         if(decode_frames_++ < PRINT_MAX_FRAME_DECODE_TIME) {
             AVPlayTime *play_time = AVPlayTime::GetInstance();
-            LogInfo("%s:c:%u:t:%u", play_time->getAcodecTag(),
+            LogInfo("%s:c:%u:t:%u", play_time->getVcodecTag(),
                     decode_frames_, play_time->getCurrenTime());
         }
         NaluStruct *nalu = (NaluStruct *)data;

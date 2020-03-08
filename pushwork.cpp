@@ -272,8 +272,8 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
     if(pcm_s16le_fp_)
     {
         // ffplay -ar 48000 -channels 2 -f s16le  -i push_dump_s16le.pcm
-        fwrite(pcm, 1, size, pcm_s16le_fp_);
-        fflush(pcm_s16le_fp_);
+//        fwrite(pcm, 1, size, pcm_s16le_fp_);
+//        fflush(pcm_s16le_fp_);
     }
 
     if(need_send_audio_spec_config)
@@ -310,11 +310,11 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
         if(pcm_flt_fp_)
         {
             // ffplay -ar 48000 -channels 2 -f f32le  -i push_dump_f32le.pcm
-            fwrite(resampled_frames[i].get()->data[0], 1,
-                    resampled_frames[i].get()->linesize[0], pcm_flt_fp_);
-            fwrite(resampled_frames[i].get()->data[1], 1,
-                    resampled_frames[i].get()->linesize[1], pcm_flt_fp_);
-            fflush(pcm_flt_fp_);
+//            fwrite(resampled_frames[i].get()->data[0], 1,
+//                    resampled_frames[i].get()->linesize[0], pcm_flt_fp_);
+//            fwrite(resampled_frames[i].get()->data[1], 1,
+//                    resampled_frames[i].get()->linesize[1], pcm_flt_fp_);
+//            fflush(pcm_flt_fp_);
         }
         // 封装带参考计数的缓存
         int aac_size = audio_encoder_->Encode(resampled_frames[i].get(),

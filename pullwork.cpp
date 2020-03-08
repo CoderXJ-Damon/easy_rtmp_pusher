@@ -124,6 +124,7 @@ void PullWork::audioCallback(int what, MsgBaseObj *data, bool flush)
     int64_t cur_time = TimesUtil::GetTimeMillisecond();
     if(what == RTMP_BODY_AUD_SPEC)
     {
+
         if(!audio_out_sdl_)
         {
             // 初始化audio out相关
@@ -143,6 +144,9 @@ void PullWork::audioCallback(int what, MsgBaseObj *data, bool flush)
                 LogError("audio_out_sdl Init failed");
                 return ;
             }
+            // 初始化非常耗时，所以需要提前初始化好 有耗时到1秒
+            LogInfo("%s:audio_out_init:t:%lld",AVPlayTime::GetInstance()->getKeyTimeTag(),
+                    TimesUtil::GetTimeMillisecond() - cur_time);
         }
     }
     else if(what == RTMP_BODY_AUD_RAW)
@@ -157,11 +161,12 @@ void PullWork::audioCallback(int what, MsgBaseObj *data, bool flush)
 
     int64_t diff = TimesUtil::GetTimeMillisecond() - cur_time;
     if(diff>5)
-        LogInfo("audioCallback t:%ld", diff);
+        LogDebug("audioCallback t:%ld", diff);
 }
 
 void PullWork::videoCallback(int what, MsgBaseObj *data, bool flush)
 {
+//    return;
     int64_t cur_time = TimesUtil::GetTimeMillisecond();
 
     if(what == RTMP_BODY_METADATA) {
@@ -185,6 +190,9 @@ void PullWork::videoCallback(int what, MsgBaseObj *data, bool flush)
                 LogError("video_out_sdl Init failed");
                 return;
             }
+            // 初始化非常耗时，所以需要提前初始化好 有耗时到1秒
+            LogInfo("%s:video_out_init:t:%lld",AVPlayTime::GetInstance()->getKeyTimeTag(),
+                    TimesUtil::GetTimeMillisecond() - cur_time);
         }
         return;
     }
@@ -198,6 +206,7 @@ void PullWork::videoCallback(int what, MsgBaseObj *data, bool flush)
 
 void PullWork::pcmCallback(uint8_t *pcm, uint32_t size, int64_t pts)
 {
+//    return;
 //  LogInfo("pcm:%p, size:%d", pcm, pts);
     if(audio_out_sdl_)
         audio_out_sdl_->PushFrame(pcm, size, pts);

@@ -154,7 +154,7 @@ public:
     }
     // rtmp位置关键点
     inline const char *getRtmpTag() {
-        return "rtmp_pull";
+        return "keytime:rtmp_pull";
     }
     // 获取到metadata
     inline const char *getMetadataTag() {
@@ -183,17 +183,17 @@ public:
     }
     // 音视频解码
     inline const char *getAcodecTag() {
-        return "acodec";
+        return "keytime:acodec";
     }
     inline const char *getVcodecTag() {
-        return "vcodec";
+        return "keytime:vcodec";
     }
     // 音视频输出
     inline const char *getAoutTag() {
-        return "aout";
+        return "keytime:aout";
     }
     inline const char *getVoutTag() {
-        return "vout";
+        return "keytime:vout";
     }
 
     // 返回毫秒

@@ -175,11 +175,11 @@ public:
     }
 
     void update_video_pts(const int64_t pts, const int serial) {
-        LogInfo("video pts:%lld", pts);
+        LogDebug("video pts:%lld", pts);
         vidclk->set_clock(pts, serial);
     }
     void update_audio_pts(const int64_t pts, const int serial) {
-        LogInfo("audio pts:%lld", pts);
+        LogDebug("audio pts:%lld", pts);
         if(abs(pts - audclk->get_clock()) > audio_frame_druation_/2)  {
             audclk->set_clock(pts, serial);
         }
