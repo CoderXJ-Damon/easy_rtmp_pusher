@@ -13,6 +13,8 @@ public:
     virtual ~AACDecoder();
     virtual RET_CODE Init(const Properties &properties);
     virtual RET_CODE Decode(const uint8_t *in,int inLen, uint8_t* out,int &outLen);
+    virtual RET_CODE SendPacket(const AVPacket *avpkt);
+    virtual RET_CODE ReceiveFrame(AVFrame *frame);
     virtual uint32_t GetRate()			{  return ctx->sample_rate;	}
     bool SetConfig(const uint8_t* data,const size_t size);
 private:

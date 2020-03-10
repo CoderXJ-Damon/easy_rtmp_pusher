@@ -36,9 +36,11 @@ SOURCES += main_play.cpp \
     h264decoder.cpp \
     audiodecodeloop.cpp \
     pullwork.cpp \
-    videodeccodeloop.cpp \	
     videooutputloop.cpp \
-    avtimebase.cpp 
+    avtimebase.cpp \ 
+    packetqueue.cpp \
+    imagescale.cpp \
+    videodecodeloop.cpp
     
 win32 {
 INCLUDEPATH += $$PWD/ffmpeg-4.2.1-win32-dev/include
@@ -94,4 +96,6 @@ HEADERS += \
     pullwork.h \
     videodecodeloop.h \
     videooutputloop.h \
-    framequeue.h 
+    framequeue.h \ 
+    packetqueue.h \
+    imagescale.h

@@ -22,7 +22,7 @@ public:
         callback_display_ = callback;
     }
     // 用于判断是否输出显示的回调函数
-    void AddAVSyncCallback(function<int(int64_t, int32_t)> callback)
+    void AddAVSyncCallback(function<int(int64_t, int32_t, int64_t &)> callback)
     {
         callback_avsync_ = callback;
     }
@@ -30,7 +30,7 @@ public:
 private:
     std::function<void(uint8_t*, uint32_t, int32_t)> callback_display_ = NULL;
     // pts和帧间隔
-    std::function<int(int64_t, int32_t)> callback_avsync_ = NULL;
+    std::function<int(int64_t, int32_t, int64_t &)> callback_avsync_ = NULL;
 
     FrameQueue *frame_queue_ = NULL;
     int64_t pre_pts_ = 0;

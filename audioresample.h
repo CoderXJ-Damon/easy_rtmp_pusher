@@ -57,7 +57,9 @@ public:
     }
     inline int64_t GetStartPts() const {return start_pts_;}
     inline int64_t GetCurPts() {std::lock_guard<std::mutex> lock(mutex_); return cur_pts_;}
-
+    inline bool IsInit() {
+        return is_init_;
+    }
 public:
     int closeResample();
     int initResampledData();
@@ -78,10 +80,14 @@ private:
 
     uint8_t **resampled_data_ = nullptr;
     int resampled_data_size = 8192;
-    int src_channels_ = 0;
-    int dst_channels_ = 0;
+    int src_channels_ = 2;
+    int dst_channels_ =2;
     int64_t total_resampled_num_ = 0;
     string logtag_;
+    bool is_init_ = false;
+    int dst_nb_samples = 1024;
+    int max_dst_nb_samples = 1024;
+    int dst_linesize = 0;
 };
 } // namespace audio_resample
 #endif // AUDIORESAMPLE_H

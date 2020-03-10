@@ -8,7 +8,7 @@
 namespace LQF {
 #define VIDEO_PICTURE_QUEUE_SIZE	3       // 图像帧缓存数量
 #define SUBPICTURE_QUEUE_SIZE		16      // 字幕帧缓存数量
-#define SAMPLE_QUEUE_SIZE           9       // 采样帧缓存数量
+#define SAMPLE_QUEUE_SIZE           4       // 采样帧缓存数量
 #define FRAME_QUEUE_SIZE		SUBPICTURE_QUEUE_SIZE
 using std::mutex;
 using std::conditional;
@@ -187,6 +187,9 @@ public:
     int Size() {
         return size_ - rindex_shown_; // 注意这里为什么要减去rindex_shown_
     }
+    int MaxSize() {
+        return max_size_; // 注意这里为什么要减去rindex_shown_
+    }
 
 private:
     Frame	queue_[FRAME_QUEUE_SIZE];        // FRAME_QUEUE_SIZE  最大size, 数字太大时会占用大量的内存，需要注意该值的设置
@@ -198,7 +201,6 @@ private:
     int		rindex_shown_ = 0;                   // 初始化为0，配合keep_last=1使用
     std::mutex	mutex_;                     // 互斥量
     std::condition_variable	cond_;                      // 条件变量
-
 };
 }
 #endif // FRAMEQUEUE_H

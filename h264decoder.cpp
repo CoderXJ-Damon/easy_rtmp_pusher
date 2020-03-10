@@ -42,7 +42,10 @@ RET_CODE H264Decoder::Init(const Properties &properties)
         LogError("avcodec_alloc_context3 failed\n");
         return RET_ERR_OUTOFMEMORY;
     }
-
+    if (codec_->capabilities & AV_CODEC_CAP_TRUNCATED) {
+        /* we do not send complete frames */
+        ctx_->flags |= AV_CODEC_FLAG_TRUNCATED;
+    }
     if(avcodec_open2(ctx_, codec_, NULL) != 0)
     {
         LogError("avcodec_open2 %s failed\n", codec_->name);
@@ -89,12 +92,7 @@ RET_CODE H264Decoder::Decode(uint8_t *in, int32_t in_len, uint8_t *out, int32_t 
         int width = picture_->width;
         int height = picture_->height;
         out_len = picture_->width * picture_->height * 1.5;
-        memcpy(out, picture_->data[0], picture_->width * picture_->height);
-        memcpy(out + picture_->width * picture_->height, picture_->data[1],
-                (picture_->width * picture_->height) /4);
-        memcpy(out + (picture_->width * ctx_->height) + (picture_->width * ctx_->height) /4,
-               picture_->data[2],
-                (picture_->width * picture_->height) /4);
+
         for(int j=0; j<height; j++)
         {
             memcpy(out + j*width, picture_->data[0] + j * picture_->linesize[0], width);
@@ -138,4 +136,63 @@ RET_CODE H264Decoder::Decode(uint8_t *in, int32_t in_len, uint8_t *out, int32_t 
     out_len = 0;
     return RET_ERR_EAGAIN;
 }
+/**
+ * @brief H264Decoder::SendPacket
+ * @param avpkt
+ * @return RET_OK:  on success, otherwise negative error code:
+ *     RET_ERR_EAGAIN:   input is not accepted in the current state - user
+ *                         must read output with avcodec_receive_frame() (once
+ *                         all output is read, the packet should be resent, and
+ *                         the call will not fail with EAGAIN).
+ *      RET_ERR_EOF:       the decoder has been flushed, and no new packets can
+ *                         be sent to it (also returned if more than 1 flush
+ *                         packet is sent)
+ *      AVERROR(EINVAL):   codec not opened, it is an encoder, or requires flush
+ *      AVERROR(ENOMEM):   failed to add packet to internal queue, or similar
+ *      other errors: legitimate decoding errors
+ */
+RET_CODE H264Decoder::SendPacket(const AVPacket *avpkt)
+{
+    int ret = avcodec_send_packet(ctx_, avpkt);
+    if(0 == ret)
+        return RET_OK;
 
+    if (AVERROR(EAGAIN) == ret) {
+        //        LogWarn("avcodec_send_packet failed, RET_ERR_EAGAIN.\n");
+        return RET_ERR_EAGAIN;
+    } else if(AVERROR_EOF) {
+        LogWarn("avcodec_send_packet failed, RET_ERR_EOF.\n");
+        return RET_ERR_EOF;
+    } else {
+        LogError("avcodec_send_packet failed, AVERROR(EINVAL) or AVERROR(ENOMEM) or other...\n");
+        return RET_FAIL;
+    }
+}
+/**
+ * @brief H264Decoder::ReceiveFrame
+ * @param frame
+ *  *      RET_OK:                 success, a frame was returned
+ *      RET_ERR_EAGAIN:   output is not available in this state - user must try
+ *                         to send new input
+ *      AVERROR_EOF:       the decoder has been fully flushed, and there will be
+ *                         no more output frames
+ *      AVERROR(EINVAL):   codec not opened, or it is an encoder
+ *      other negative values: legitimate decoding errors
+ */
+RET_CODE H264Decoder::ReceiveFrame(AVFrame *frame)
+{
+    int ret = avcodec_receive_frame(ctx_, frame);
+    if(0 == ret)
+        return RET_OK;
+
+    if (AVERROR(EAGAIN) == ret) {
+        //        LogWarn("avcodec_receive_frame failed, RET_ERR_EAGAIN.\n");
+        return RET_ERR_EAGAIN;
+    } else if(AVERROR_EOF) {
+        LogWarn("avcodec_receive_frame failed, RET_ERR_EOF.\n");
+        return RET_ERR_EOF;
+    } else {
+        LogError("avcodec_receive_frame failed, AVERROR(EINVAL) or AVERROR(ENOMEM) or other...\n");
+        return RET_FAIL;
+    }
+}

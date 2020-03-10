@@ -184,12 +184,13 @@ public:
             audclk->set_clock(pts, serial);
         }
     }
-    AV_FRAME_SYNC_RESULT GetVideoSyncResult(const int64_t pts, const int duration)
+    AV_FRAME_SYNC_RESULT GetVideoSyncResult(const int64_t pts, const int duration, int64_t &get_diff)
     {
         video_frame_druation_ = duration;
         int64_t diff = pts - get_master_clock();
-//        LogInfo("vpts:%lld, diff:%lld", pts, diff);
-        if(diff > 0 && diff < video_frame_druation_*10) {
+        get_diff = diff;
+        LogDebug("vpts:%lld, duration:%d, diff:%lld",  pts, duration, diff);
+        if(diff > 0 && diff < video_frame_druation_*20) {
             return AV_FRAME_HOLD;
         } else if(diff<=0 && diff >-video_frame_druation_/2){
             return AV_FRAME_PLAY;

@@ -8,11 +8,15 @@ AudioDecodeLoop::AudioDecodeLoop()
 
 AudioDecodeLoop::~AudioDecodeLoop()
 {
+    pkt_queue_->packet_queue_abort();       // 请求退出队列
+    request_exit_ = true;
+
     Stop();
     if(aac_decoder_)
         delete aac_decoder_;
     if(pcm_buf_)
         delete [] pcm_buf_;
+
 }
 
 RET_CODE AudioDecodeLoop::Init(const Properties &properties)
@@ -35,48 +39,94 @@ RET_CODE AudioDecodeLoop::Init(const Properties &properties)
         LogError("pcm_buf_ new failed");
         return RET_ERR_OUTOFMEMORY;
     }
-    return RET_OK;
+
+    pkt_queue_ = new PacketQueue();
+    if(!pkt_queue_)
+    {
+        LogError("PacketQueue new failed");
+        return RET_ERR_OUTOFMEMORY;
+    }
+    if(pkt_queue_->packet_queue_init() == 0) {
+        pkt_queue_->packet_queue_start();
+        return RET_OK;
+    }
+    else {
+        return RET_FAIL;
+    }
 }
 
 RET_CODE AudioDecodeLoop::Output(const uint8_t *pcm_buf, const uint32_t size)
 {
-//    if(audio_out_sdl_)
-//        return audio_out_sdl_->Output(pcm_buf, size);
-//    else
-//        return RET_FAIL;
+    //    if(audio_out_sdl_)
+    //        return audio_out_sdl_->Output(pcm_buf, size);
+    //    else
+    //        return RET_FAIL;
     return RET_OK;
 }
 
-void AudioDecodeLoop::handle(int what, MsgBaseObj *data)
+void AudioDecodeLoop::Loop()
 {
-    if(what == RTMP_BODY_AUD_SPEC)
-    {
 
-    }
-    else if(what == RTMP_BODY_AUD_RAW)
+    AVFrame *frame = av_frame_alloc();
+    RET_CODE ret = RET_OK;
+    while(true)
     {
-        if(decode_frames_++ < PRINT_MAX_FRAME_DECODE_TIME) {
-            AVPlayTime *play_time = AVPlayTime::GetInstance();
-            LogInfo("%s:c:%u:t:%u", play_time->getAcodecTag(),
-                    decode_frames_, play_time->getCurrenTime());
-        }
-        AudioRawMsg *aud_raw = (AudioRawMsg *)data;
-        pcm_buf_size_ = PCM_BUF_MAX_SIZE;
-        // 可以发送adts header, 如果不发送adts则要初始化 ctx的参数
-        if(aac_decoder_->Decode(aud_raw->data , aud_raw->size ,
-                                pcm_buf_, pcm_buf_size_) == RET_OK)
+        if(request_exit_)
+            break;
+
+        do
         {
-            if(_callable_post_pcm_)
-                _callable_post_pcm_(pcm_buf_, pcm_buf_size_, aud_raw->pts);
-        } else {
-            LogWarn("decode no got frame");
+            if(request_exit_)
+                break;
+            ret = aac_decoder_->ReceiveFrame(frame);
+            if (ret >= 0) {
+                frame->pts = frame->best_effort_timestamp;
+            }
+
+            if (ret == RET_OK)           // 解到一帧数据
+            {
+                if(decode_frames_++ < PRINT_MAX_FRAME_DECODE_TIME) {
+                    AVPlayTime *play_time = AVPlayTime::GetInstance();
+                    LogInfo("%s:c:%u:s:%d:t:%u", play_time->getAcodecTag(),
+                            decode_frames_, pkt_queue_->get_nb_packets(),
+                            play_time->getCurrenTime());
+                }
+//                LogInfo("apts:%lld, dts:%lld", frame->pts, frame->pkt_dts);
+                if(_callable_post_frame_)
+                    _callable_post_frame_(frame);
+            }
+        } while (ret == RET_OK);
+        if(request_exit_)
+            break;
+        AVPacket pkt;
+        if (pkt_queue_->packet_queue_get(&pkt, 1, &pkt_serial) < 0)
+        {
+            LogError("packet_queue_get failed");
+            break;
         }
-        delete aud_raw;     // 要手动释放资源
+        if (pkt.data != NULL && pkt.size!=0)
+        {
+            if(aac_decoder_->SendPacket(&pkt) != RET_OK)
+                LogError("SendPacket failed, which is an API violation.\n");
+            av_packet_unref(&pkt);
+        } else {
+            LogWarn("pkt null");
+        }
     }
-    else
-    {
-        LogError("can't handle what:%d", what);
-        delete data;
-    }
+    av_frame_free(&frame);
+    LogWarn("Loop leave");
 }
+
+void AudioDecodeLoop::Post(void *pkt)
+{
+    auto size = pkt_queue_->get_nb_packets();
+    if(size > 15) {
+        if(packet_cache_delay_++ > 5) {
+            packet_cache_delay_ = 0; // 只是为了降低打印的频率
+            LogInfo("cache %d packet lead to delay\n", size);
+        }
+    }
+    pkt_queue_->packet_queue_put((AVPacket *)pkt);
+}
+
 }

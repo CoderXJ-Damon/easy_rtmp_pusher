@@ -9,6 +9,7 @@
 //#include "audio.h"
 //#include "aacencoder.h"
 //#include "audioresample.h"
+
 using namespace std;
 
 extern "C" {
@@ -19,6 +20,7 @@ extern "C" {
 }
 
 #include "pushwork.h"
+#include "timeutil.h"
 using namespace LQF;
 extern int rtmpPull(int argc, char* argv[]);
 extern int rtmpPublish(int argc, char* argv[]);
@@ -32,13 +34,13 @@ extern int testAacEncoder(const char *pcmFileName, const char* aacFileName);
 int main(int argc, char* argv[])
 {
     init_logger("rtmp_push.log", S_INFO);
-    ////    rtmpPublish(argc, argv);
-    //    {
-    //    auto frame = shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) {
-    //            cout << "~AVFrame "  << endl;
-    //            if (p) av_frame_free(&p);});
-    //    }
-    //    testAacEncoder("buweishui_48000_2_s16le.pcm", "buweishui.aac");
+    //    rtmpPublish(argc, argv);
+//        {
+//        auto frame = shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) {
+//                cout << "~AVFrame "  << endl;
+//                if (p) av_frame_free(&p);});
+//        }
+//        testAacEncoder("buweishui_48000_2_s16le.pcm", "buweishui.aac");
     {
         PushWork pushwork;
 
@@ -87,7 +89,13 @@ int main(int argc, char* argv[])
         }
 
     } // 测试析构
-    LogError("~~析构");
+    //  屏幕打印：调试 耗时1200ms，直接运行700ms,
+    // 写到本地文件：调试31ms，直接运行16ms
+    int64_t cur_time = TimesUtil::GetTimeMillisecond();
+    for(int i = 0; i < 1000; i++) {
+        LogError(" properties.SetProperty properties.SetProperty properties.SetProperty");
+    }
+    printf("t:%lld", TimesUtil::GetTimeMillisecond() - cur_time);
     getchar();
     return 0;
 }

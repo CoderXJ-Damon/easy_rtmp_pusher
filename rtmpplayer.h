@@ -6,7 +6,13 @@
 #include "rtmpbase.h"
 #include "mediabase.h"
 
+
 namespace LQF {
+
+/**
+ * @brief The RTMPPlayer class
+ * 1.把接收的数据包封装成AVPacket
+ */
 class RTMPPlayer : public RTMPBase
 {
 public:
@@ -15,15 +21,25 @@ public:
     RET_CODE Start();
     void Stop();
 	void*  readPacketThread();
-    // 收到音频数据包调用回调
-    void AddAudioCallback(std::function<void(int what, MsgBaseObj *data, bool flush)> callable_object)
+    // 收到音频数据包调用回调, 是否清空队列也有pullwork进行
+    void AddAudioInfoCallback(std::function<void(int what, MsgBaseObj *data, bool flush)> callable_object)
     {
         audio_callable_object_ = callable_object;
     }
     // 收到视频数据包调用回调
-    void AddVideoCallback(std::function<void(int what, MsgBaseObj *data, bool flush)> callable_object)
+    void AddVideoInfoCallback(std::function<void(int what, MsgBaseObj *data, bool flush)> callable_object)
     {
         video_callable_object_ = callable_object;
+    }
+
+    void AddAudioDataCallback(std::function<void(void *)> callable_object)
+    {
+        audio_packet_callable_object_ = callable_object;
+    }
+
+    void AddVideoDataCallback(std::function<void(void *)> callable_object)
+    {
+        video_packet_callable_object_ = callable_object;
     }
 	
 private:
@@ -33,6 +49,9 @@ private:
     std::thread *worker_ = NULL;
     std::function<void(int what, MsgBaseObj *data, bool flush)> audio_callable_object_ = NULL;
     std::function<void(int what, MsgBaseObj *data, bool flush)> video_callable_object_ = NULL;
+
+    std::function<void(void *)> audio_packet_callable_object_ = NULL;
+    std::function<void(void *)> video_packet_callable_object_ = NULL;
 private:
     //video and audio info
     int video_codec_id = 0;
@@ -45,6 +64,9 @@ private:
     int audio_sample_size = 0;
     int audio_channel = 2;
     int file_size = 0;
+
+    uint32_t video_frame_duration_ = 40; // 默认是40毫秒
+    uint32_t audio_frame_duration_ = 21; // 默认是21毫秒 aac 48kh
 
     uint8_t profile_ = 0;
     uint8_t sample_frequency_index_ = 0;
@@ -64,6 +86,8 @@ private:
 
     bool is_got_audio_sequence_ = false;
     uint32_t got_audio_frames_ = 0; //
+
+    bool firt_entry = false;
 };
 }
 

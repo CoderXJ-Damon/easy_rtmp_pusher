@@ -10,15 +10,6 @@
 namespace LQF
 {
 
-struct LooperMessage;
-typedef struct LooperMessage LooperMessage;
-
-// 消息载体
-struct LooperMessage {
-    int what;
-    MsgBaseObj *obj;
-    bool quit;
-};
 
 class Looper
 {
@@ -40,7 +31,7 @@ protected:
     Semaphore *head_data_available_;
     std::mutex queue_mutex_;
     bool running_;
-    int deque_max_size_ = 30;
+    int deque_max_size_ = 60;
 };
 
 }

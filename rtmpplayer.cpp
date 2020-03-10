@@ -1,5 +1,14 @@
 ﻿#include "rtmpplayer.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include "libavformat/avformat.h"
+#ifdef __cplusplus
+}
+#endif
+
 #include "librtmp/rtmp_sys.h"
 #include "dlog.h"
 #include "mediabase.h"
@@ -78,6 +87,9 @@ void RTMPPlayer::parseScriptTag(RTMPPacket &packet)
                             {
                                 video_frame_rate = (int)dVal;
                                 LogInfo("parse frame_rate %d",video_frame_rate);
+                                if(video_frame_rate >0) {
+                                    video_frame_duration_ = 1000/video_frame_rate;
+                                }
                             }
                             else if (strcasecmp("videocodecid", property->p_name.av_val) == 0)
                             {
@@ -215,7 +227,7 @@ void* RTMPPlayer::readPacketThread()
                 //                            packet.m_nBodySize);
                 //                }
                 // SPS/PPS sequence
-                if (sequence)
+                if (keyframe && sequence)
                 {
                     LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
                             play_time->getAvcHeaderTag(),
@@ -258,16 +270,31 @@ void* RTMPPlayer::readPacketThread()
                         pps_vector_.push_back(pps);
                         offset += pps_len;
                     }
-                    VideoSequenceHeaderMsg * vid_config_msg = new VideoSequenceHeaderMsg(
-                                (uint8_t *)sps_vector_[0].c_str(),
-                            sps_vector_[0].size(),
-                            (uint8_t *)pps_vector_[0].c_str(),
-                            pps_vector_[0].size()
-                            );
-                    video_callable_object_(RTMP_BODY_VID_CONFIG, vid_config_msg, false);
+
+                    // 封装成avpacket
+                    AVPacket sps_pkt = { 0 };
+                    sps_pkt.size = sps_vector_[0].size();
+                    sps_pkt.data = (uint8_t *)av_malloc(sps_pkt.size);
+                    if(av_packet_from_data(&sps_pkt, sps_pkt.data, sps_pkt.size) == 0) {
+                        memcpy(sps_pkt.data, (uint8_t *)sps_vector_[0].c_str(), sps_vector_[0].size());
+                        video_packet_callable_object_(&sps_pkt);  // 发送包
+                    } else {
+                        LogError("av_packet_from_data sps_pkt failed");
+                    }
+
+                    AVPacket pps_pkt= { 0 };
+                    pps_pkt.size = pps_vector_[0].size();
+                    pps_pkt.data = (uint8_t *)av_malloc(pps_pkt.size);
+                    if(av_packet_from_data(&pps_pkt, pps_pkt.data,  pps_pkt.size) == 0) {
+                        memcpy(pps_pkt.data, (uint8_t *)pps_vector_[0].c_str(), pps_vector_[0].size());
+                        video_packet_callable_object_(&pps_pkt);  // 发送包
+                    } else {
+                        LogError("av_packet_from_data pps_pkt failed");
+                    }
+                    firt_entry = true;
                 }
                 // Nalu frames
-                else
+                else if(firt_entry)
                 {
                     if(keyframe && !is_got_video_iframe_) {
                         is_got_video_iframe_ = true;
@@ -282,18 +309,8 @@ void* RTMPPlayer::readPacketThread()
                                 keyframe,
                                 play_time->getCurrenTime());
                     }
-
-                    uint32_t offset = 5;
-                    uint8_t ch0 = packet.m_body[offset];
-                    uint8_t ch1 = packet.m_body[offset + 1];
-                    uint8_t ch2 = packet.m_body[offset + 2];
-                    uint8_t ch3 = packet.m_body[offset + 3];
-                    uint32_t data_len = ((ch0 << 24) | (ch1 << 16) | (ch2 << 8) | ch3);
-                    offset += 4;
-                    NaluStruct * nalu = new NaluStruct(data_len + 4);
-                    memcpy(nalu->data, nalu_header, 4);
-                    memcpy(nalu->data + 4, packet.m_body + offset, data_len);
-
+                    uint32_t duration = video_frame_duration_;
+                    // 计算pts
                     if(video_pre_pts_ == -1){
                         video_pre_pts_= packet.m_nTimeStamp;
                         if(!packet.m_hasAbsTimestamp) {
@@ -301,15 +318,40 @@ void* RTMPPlayer::readPacketThread()
                         }
                     }
                     else {
-                        if(packet.m_hasAbsTimestamp)
+                        if(packet.m_hasAbsTimestamp) {
                             video_pre_pts_= packet.m_nTimeStamp;
-                        else
+                        }
+                        else {
+                            duration = packet.m_nTimeStamp;
                             video_pre_pts_ += packet.m_nTimeStamp;
+                        }
                     }
-                    nalu->pts = video_pre_pts_;
-//                     LogInfo("rtmp vpts:%u", nalu->pts);
-                    video_callable_object_(RTMP_BODY_VID_RAW, nalu, false);
-                    offset += data_len;
+                    LogDebug("vpts:%u, t:%u", video_pre_pts_, packet.m_nTimeStamp);
+
+                    uint32_t offset = 5;
+                    uint8_t ch0 = packet.m_body[offset];
+                    uint8_t ch1 = packet.m_body[offset + 1];
+                    uint8_t ch2 = packet.m_body[offset + 2];
+                    uint8_t ch3 = packet.m_body[offset + 3];
+                    uint32_t data_len = ((ch0 << 24) | (ch1 << 16) | (ch2 << 8) | ch3);
+                    memcpy(&packet.m_body[offset], nalu_header, 4);
+                    AVPacket nalu_pkt = {0};
+                    nalu_pkt.size = data_len + 4;
+                    nalu_pkt.data = (uint8_t *)av_malloc(nalu_pkt.size);
+                    offset += 4;
+                    if(av_packet_from_data(&nalu_pkt, nalu_pkt.data, nalu_pkt.size) == 0) {
+                        memcpy(&nalu_pkt.data[0], nalu_header, 4);
+                        memcpy(&nalu_pkt.data[4], (uint8_t *)&packet.m_body[offset], data_len);
+                        nalu_pkt.duration = duration;
+                        nalu_pkt.dts = video_pre_pts_;
+                        if(keyframe)
+                            nalu_pkt.flags = AV_PKT_FLAG_KEY;
+                        video_packet_callable_object_(&nalu_pkt);  // 发送包
+                    } else {
+                        LogError("av_packet_from_data nalu_pkt failed");
+                    }
+                } else {
+                    LogWarn("unhandle data");
                 }
             }
             else if (packet.m_packetType == RTMP_PACKET_TYPE_AUDIO)
@@ -369,8 +411,22 @@ void* RTMPPlayer::readPacketThread()
                                 play_time->getAacDataTag(),
                                 play_time->getCurrenTime());
                     }
-
-
+                    uint32_t duration = audio_frame_duration_;
+                    if(audio_pre_pts_ == -1){
+                        audio_pre_pts_= packet.m_nTimeStamp;
+                        if(!packet.m_hasAbsTimestamp) {
+                            LogWarn("no init video pts");
+                        }
+                    }
+                    else {
+                        if(packet.m_hasAbsTimestamp)
+                            audio_pre_pts_= packet.m_nTimeStamp;
+                        else {
+                            duration = packet.m_nTimeStamp;
+                            audio_pre_pts_ += packet.m_nTimeStamp;
+                        }
+                    }
+                    LogDebug("apts:%u, t:%u", audio_pre_pts_, packet.m_nTimeStamp);
                     // ADTS(7 bytes) + AAC data
                     uint32_t data_len = packet.m_nBodySize - 2 + 7;
                     uint8_t adts[7];
@@ -381,31 +437,33 @@ void* RTMPPlayer::readPacketThread()
                     adts[4] = (data_len & 0x7FF) >> 3;
                     adts[5] = ((data_len & 7) << 5) + 0x1F;
                     adts[6] = 0xfc;
-                    // Write audio frames
-                    AudioRawMsg *aud_raw = new  AudioRawMsg(data_len);
-                    memcpy(aud_raw->data, adts, 7);
-                    memcpy(aud_raw->data + 7, packet.m_body + 2, packet.m_nBodySize - 2);
-                    if(audio_pre_pts_ == -1){
-                        audio_pre_pts_= packet.m_nTimeStamp;
-                        if(!packet.m_hasAbsTimestamp) {
-                            LogWarn("no init video pts");
+
+                    AVPacket aac_pkt  = {0};
+                    aac_pkt.size = data_len;
+                    aac_pkt.data =  (uint8_t *)av_malloc(aac_pkt.size);
+                    if(av_packet_from_data(&aac_pkt, aac_pkt.data, aac_pkt.size) == 0) {
+                        memcpy(&aac_pkt.data[0], adts, 7);
+                        memcpy(&aac_pkt.data[7], packet.m_body + 2, packet.m_nBodySize - 2);
+                        aac_pkt.duration = duration;
+                        aac_pkt.dts = audio_pre_pts_;
+                        //                            aac_pkt.pts = audio_pre_pts_;
+                        audio_packet_callable_object_(&aac_pkt);  // 发送包
+                        static FILE *rtmp_dump_aac = NULL;
+                        if(!rtmp_dump_aac) {
+                            rtmp_dump_aac = fopen("rtmp.aac","wb+");
                         }
+                        fwrite(aac_pkt.data, aac_pkt.size, 1, rtmp_dump_aac);
+                        fflush(rtmp_dump_aac);
+
+                    } else {
+                        LogError("av_packet_from_data aac_pkt failed");
                     }
-                    else {
-                        if(packet.m_hasAbsTimestamp)
-                            audio_pre_pts_= packet.m_nTimeStamp;
-                        else
-                            audio_pre_pts_ += packet.m_nTimeStamp;
-                    }
-                    aud_raw->pts = audio_pre_pts_;
-//                    LogInfo("rtmp apts:%u", aud_raw->pts);
-                    audio_callable_object_(RTMP_BODY_AUD_RAW, aud_raw, false);
                 }
                 //                LogInfo("aud finish  t:%ld\n", TimesUtil::GetTimeMillisecond() - cur_time);
             }
             else if (packet.m_packetType == RTMP_PACKET_TYPE_INFO)
             {
-//                LogInfo("onReadVideoAndAudioInfo ");
+                //                LogInfo("onReadVideoAndAudioInfo ");
                 LogInfo("%s:%s:t:%u", play_time->getRtmpTag(),
                         play_time->getMetadataTag(),
                         play_time->getCurrenTime());

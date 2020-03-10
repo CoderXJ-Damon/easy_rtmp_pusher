@@ -39,27 +39,42 @@ int AudioResampler::InitResampler(const AudioResampleParams & arp) {
     }
 
     swr_ctx_ = swr_alloc();
+
     if(!swr_ctx_)
     {
         LogError("%s swr_alloc failed", logtag_.c_str());
         return -1;
     }
     /* set options */
-    av_opt_set_sample_fmt(swr_ctx_, "in_sample_fmt",      resample_params_.src_sample_fmt, 0);
-    av_opt_set_int(swr_ctx_,        "in_channel_layout",  resample_params_.src_channel_layout, 0);
-    av_opt_set_int(swr_ctx_,        "in_sample_rate",     resample_params_.src_sample_rate, 0);
-    av_opt_set_sample_fmt(swr_ctx_, "out_sample_fmt",     resample_params_.dst_sample_fmt, 0);
-    av_opt_set_int(swr_ctx_,        "out_channel_layout", resample_params_.dst_channel_layout, 0);
-    av_opt_set_int(swr_ctx_,        "out_sample_rate",    resample_params_.dst_sample_rate, 0);
+    ret = 0;
+    ret |= av_opt_set_int(swr_ctx_,        "in_channel_layout",  resample_params_.src_channel_layout, 0);
+    ret |= av_opt_set_int(swr_ctx_,        "in_sample_rate",     resample_params_.src_sample_rate, 0);
+    ret |= av_opt_set_sample_fmt(swr_ctx_, "in_sample_fmt",      resample_params_.src_sample_fmt, 0);
+
+
+    ret |= av_opt_set_int(swr_ctx_,        "out_channel_layout", resample_params_.dst_channel_layout, 0);
+    ret |= av_opt_set_int(swr_ctx_,        "out_sample_rate",    resample_params_.dst_sample_rate, 0);
+    ret |= av_opt_set_sample_fmt(swr_ctx_, "out_sample_fmt",     resample_params_.dst_sample_fmt, 0);
+    if(ret != 0) {
+        LogError("av_opt_set_int failed");
+        return -1;
+    }
+
     /* initialize the resampling context */
     ret = swr_init(swr_ctx_);
     if (ret < 0) {
         LogError("%s  failed to initialize the resampling context.", logtag_.c_str());
         return ret;
     }
+    int src_nb_samples = 1024;
+    max_dst_nb_samples = dst_nb_samples =
+            av_rescale_rnd(src_nb_samples,
+                           resample_params_.dst_sample_rate,
+                           resample_params_.src_sample_rate, AV_ROUND_UP);
+
     if (initResampledData() < 0)
         return AVERROR(ENOMEM);
-
+    is_init_ = true;
     LogInfo("%s init done ", logtag_.c_str());
     return 0;
 }
@@ -101,18 +116,38 @@ int AudioResampler::SendResampleFrame(AVFrame *frame)
     if (is_fifo_only) {
         return src_data ? av_audio_fifo_write(audio_fifo_, (void **)src_data, src_nb_samples) : 0;
     }
-
-    const int dst_nb_samples = av_rescale_rnd(swr_get_delay(swr_ctx_, resample_params_.src_sample_rate) + src_nb_samples,
-                                              resample_params_.src_sample_rate, resample_params_.dst_sample_rate, AV_ROUND_UP);
-    if (dst_nb_samples > resampled_data_size)
-    {
-        //resampled_data_
-        resampled_data_size = dst_nb_samples;
-        if (initResampledData() < 0)
-            return AVERROR(ENOMEM);
+    int delay = swr_get_delay(swr_ctx_, resample_params_.src_sample_rate);
+    dst_nb_samples = av_rescale_rnd(delay
+                                    + src_nb_samples,
+                                    resample_params_.dst_sample_rate ,
+                                    resample_params_.src_sample_rate,
+                                    AV_ROUND_UP);
+    //   const int dst_nb_samples = av_rescale_rnd(src_nb_samples,
+    //                                             resample_params_.dst_sample_rate,
+    //                                             resample_params_.src_sample_rate,
+    //                                             AV_ROUND_UP) + 20;
+//    dst_nb_samples = 941;
+    if (dst_nb_samples > max_dst_nb_samples) {
+        av_freep(&resampled_data_[0]);
+        int ret = av_samples_alloc(resampled_data_, &dst_linesize, dst_channels_,
+                               dst_nb_samples, resample_params_.dst_sample_fmt, 1);
+        if (ret < 0) {
+            LogError("av_samples_alloc failed");
+            return 0;
+        }
+        max_dst_nb_samples = dst_nb_samples;
     }
     int nb_samples = swr_convert(swr_ctx_, resampled_data_, dst_nb_samples,
                                  (const uint8_t **)src_data, src_nb_samples);
+
+    int dst_bufsize = av_samples_get_buffer_size(&dst_linesize, dst_channels_,
+                                                     nb_samples, resample_params_.dst_sample_fmt, 1);
+    // dump
+    //
+    static FILE *s_swr_fp = fopen("swr.pcm","wb");
+    fwrite(resampled_data_[0], 1, dst_bufsize, s_swr_fp);
+    fflush(s_swr_fp);
+    //  实际是FIFO的坑
     return av_audio_fifo_write(audio_fifo_, (void **)resampled_data_, nb_samples);
 }
 
@@ -180,7 +215,10 @@ shared_ptr<AVFrame> AudioResampler::getOneFrame(const int desired_size)
     auto frame = allocOutFrame(desired_size);
     if (frame)
     {
-        av_audio_fifo_read(audio_fifo_, (void **)frame->data, desired_size);
+        int ret = av_audio_fifo_read(audio_fifo_, (void **)frame->data, desired_size);
+        if(ret <= 0) {
+            LogError("av_audio_fifo_read failed");
+        }
         frame->pts = cur_pts_;
         cur_pts_ += desired_size;
         total_resampled_num_ += desired_size;
@@ -193,9 +231,9 @@ int AudioResampler::initResampledData()
     if (resampled_data_)
         av_freep(&resampled_data_[0]);
     av_freep(&resampled_data_);
-    int linesize = 0;
-    int ret=  av_samples_alloc_array_and_samples(&resampled_data_, &linesize, dst_channels_,
-                                                 resampled_data_size, resample_params_.dst_sample_fmt, 0);
+
+    int ret=  av_samples_alloc_array_and_samples(&resampled_data_, &dst_linesize, dst_channels_,
+                                                 dst_nb_samples, resample_params_.dst_sample_fmt, 0);
     if (ret < 0)
         LogError("%s fail accocate audio resampled data buffer", logtag_.c_str());
     return ret;

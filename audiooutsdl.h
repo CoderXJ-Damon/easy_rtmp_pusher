@@ -37,6 +37,7 @@ public:
      int paused = 0;
      uint32_t PRINT_MAX_FRAME_OUT_TIME = 5;
      uint32_t out_frames_ = 0;       // 统计输出的帧数
+     bool cache_frame_enough_ = false;
 private:
     SDL_AudioSpec spec;
     int sample_rate_ = 48000;
@@ -44,6 +45,7 @@ private:
     int channels_ = 2;
 
     int64_t pre_pts_ = 0;
+
 
 };
 }

@@ -494,6 +494,17 @@ public:
     virtual ~MsgBaseObj(){}
 };
 
+struct LooperMessage;
+typedef struct LooperMessage LooperMessage;
+
+// 消息载体
+struct LooperMessage {
+    int what;
+    MsgBaseObj *obj;
+    bool quit;
+};
+
+
 enum RTMP_BODY_TYPE
 {
     RTMP_BODY_METADATA, // metadata
