@@ -2,6 +2,7 @@
 
 #include "dlog.h"
 #include "timeutil.h"
+#include "avtimebase.h"
 namespace LQF
 {
 AudioCapturer::AudioCapturer()
@@ -47,6 +48,11 @@ void AudioCapturer::Loop()
             break;
         if(readPcmFile(pcm_buf_, nb_samples) == 0)
         {
+            if(!is_first_frame_) {
+                is_first_frame_ = true;
+                LogInfo("%s:t%u", AVPublishTime::GetInstance()->getAInTag(),
+                        AVPublishTime::GetInstance()->getCurrenTime());
+            }
             if(callback_get_pcm_)
             {
                 callback_get_pcm_(pcm_buf_, nb_samples *4);

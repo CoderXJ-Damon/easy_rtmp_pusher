@@ -8,7 +8,7 @@
 namespace LQF {
 #define VIDEO_PICTURE_QUEUE_SIZE	3       // 图像帧缓存数量
 #define SUBPICTURE_QUEUE_SIZE		16      // 字幕帧缓存数量
-#define SAMPLE_QUEUE_SIZE           4       // 采样帧缓存数量
+#define SAMPLE_QUEUE_SIZE           9       // 采样帧缓存数量
 #define FRAME_QUEUE_SIZE		SUBPICTURE_QUEUE_SIZE
 using std::mutex;
 using std::conditional;

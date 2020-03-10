@@ -91,9 +91,9 @@ RET_CODE PullWork::Init(const Properties &properties)
     }
     // 设置输出参数
 
-    img_scale_ = new ImageScale();
+    img_scale_ = new ImageScaler();
     if(!img_scale_) {
-        LogError("new ImageScale failed");
+        LogError("new ImageScaler failed");
         return RET_OK;
     }
 

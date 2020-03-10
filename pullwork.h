@@ -9,7 +9,7 @@
 #include "rtmpplayer.h"
 #include "avsync.h"
 #include "audioresample.h"
-#include "imagescale.h"
+#include "ImageScale.h"
 namespace LQF
 {
 class PullWork
@@ -55,7 +55,7 @@ private:
     // 重采样
     AudioResampler *audio_resampler_ = NULL; // 将解码后的数据设置成输出需要音频
     // 视频尺寸变换
-    ImageScale *img_scale_ = NULL;
+    ImageScaler *img_scale_ = NULL;
     int video_out_width_ = 480;
     int video_out_height_ = 270;
     AVPixelFormat video_out_format_ = AV_PIX_FMT_YUV420P;

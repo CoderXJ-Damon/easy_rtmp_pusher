@@ -27,7 +27,7 @@ public:
      FrameQueue *frame_queue_ = NULL;
      int64_t audio_clock = 0;
      int audio_volume = 100;
-     AVSync *avsync_;
+     AVSync *avsync_ = NULL;
 
      uint8_t *audio_buf = NULL;             // 指向解码后的数据，它只是一个指针，实际存储解码后的数据在audio_buf1
      uint8_t *audio_buf1 = NULL;            //

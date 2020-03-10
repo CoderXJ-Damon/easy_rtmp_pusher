@@ -1,6 +1,7 @@
 ﻿#include "rtmppusher.h"
 #include "aacrtmppackager.h"
 #include "timeutil.h"
+#include "avtimebase.h"
 namespace LQF
 {
 char * put_byte(char *output, uint8_t nVal)
@@ -80,24 +81,43 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     {
     case RTMP_BODY_METADATA:
     {
+        if(!is_first_metadata_) {
+            is_first_metadata_ = true;
+            LogInfo("%s:t%u", AVPublishTime::GetInstance()->getMetadataTag(),
+                    AVPublishTime::GetInstance()->getCurrenTime());
+        }
+
         FLVMetadataMsg *metadata = (FLVMetadataMsg*)data;
         if(!SendMetadata(metadata))
         {
             LogError("SendMetadata failed");
         }
+        delete metadata;
         break;
     }
     case RTMP_BODY_VID_CONFIG:
     {
+        if(!is_first_video_sequence_) {
+            is_first_video_sequence_ = true;
+            LogInfo("%s:t%u", AVPublishTime::GetInstance()->getAvcHeaderTag(),
+                    AVPublishTime::GetInstance()->getCurrenTime());
+        }
         VideoSequenceHeaderMsg *vid_cfg_msg = (VideoSequenceHeaderMsg*)data;
         if(!sendH264SequenceHeader(vid_cfg_msg))
         {
             LogError("sendH264SequenceHeader failed");
         }
+        delete vid_cfg_msg;
         break;
     }
     case RTMP_BODY_VID_RAW:
     {
+        if(!is_first_video_frame_) {
+            is_first_video_frame_ = true;
+            LogInfo("%s:t%u", AVPublishTime::GetInstance()->getAvcFrameTag(),
+                    AVPublishTime::GetInstance()->getCurrenTime());
+        }
+
         NaluStruct* nalu = (NaluStruct*)data;
         if(sendH264Packet((char*)nalu->data,nalu->size,(nalu->type == 0x05) ? true : false,
                           nalu->pts))
@@ -113,6 +133,11 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     }
     case RTMP_BODY_AUD_SPEC:
     {
+        if(!is_first_audio_sequence_) {
+            is_first_audio_sequence_ = true;
+            LogInfo("%s:t%u", AVPublishTime::GetInstance()->getAacHeaderTag(),
+                    AVPublishTime::GetInstance()->getCurrenTime());
+        }
         AudioSpecMsg* audio_spec = (AudioSpecMsg*)data;
         uint8_t aac_spec_[4];
         aac_spec_[0] = 0xAF;
@@ -124,6 +149,11 @@ void RTMPPusher::handle(int what, MsgBaseObj *data)
     }
     case RTMP_BODY_AUD_RAW:
     {
+        if(!is_first_audio_frame_) {
+            is_first_audio_frame_ = true;
+            LogInfo("%s:t%u", AVPublishTime::GetInstance()->getAacDataTag(),
+                    AVPublishTime::GetInstance()->getCurrenTime());
+        }
         AudioRawMsg* audio_raw = (AudioRawMsg*)data;
         if(sendPacket(RTMP_PACKET_TYPE_AUDIO, (unsigned char*)audio_raw->data,
                       audio_raw->size, audio_raw->pts))

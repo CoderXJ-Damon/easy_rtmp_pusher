@@ -28,7 +28,6 @@ SOURCES += main_play.cpp \
     videocapturer.cpp \
     videooutsdl.cpp \
     audiooutsdl.cpp \
-    ringbuffer.cpp \
     avsync.cpp \
     framequeue.cpp \
      rtmpplayer.cpp \
@@ -39,7 +38,7 @@ SOURCES += main_play.cpp \
     videooutputloop.cpp \
     avtimebase.cpp \ 
     packetqueue.cpp \
-    imagescale.cpp \
+    ImageScaler.cpp \
     videodecodeloop.cpp
     
 win32 {
@@ -87,7 +86,6 @@ HEADERS += \
     rtmpplayer.h \
     videooutsdl.h \
     audiooutsdl.h \
-    ringbuffer.h \
     avsync.h \
     avtimebase.h\
     aacdecoder.h \
@@ -98,4 +96,4 @@ HEADERS += \
     videooutputloop.h \
     framequeue.h \ 
     packetqueue.h \
-    imagescale.h
+    ImageScaler.h

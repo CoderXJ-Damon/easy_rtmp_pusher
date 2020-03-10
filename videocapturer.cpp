@@ -1,6 +1,7 @@
 ﻿#include "videocapturer.h"
 #include "dlog.h"
 #include "timeutil.h"
+#include "avtimebase.h"
 namespace LQF {
 VideoCapturer::VideoCapturer()
 {
@@ -47,6 +48,11 @@ void VideoCapturer::Loop()
             break;
         if(readYuvFile(yuv_buf_, yuv_buf_size) == 0)
         {
+            if(!is_first_frame_) {
+                is_first_frame_ = true;
+                LogInfo("%s:t%u", AVPublishTime::GetInstance()->getVInTag(),
+                        AVPublishTime::GetInstance()->getCurrenTime());
+            }
             if(callable_object_)
             {
                 callable_object_(yuv_buf_, yuv_buf_size);

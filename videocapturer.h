@@ -52,6 +52,8 @@ private:
 
 
     function<void(uint8_t*, int32_t)> callable_object_ = NULL;
+
+    bool is_first_frame_ = false;
 };
 }
 

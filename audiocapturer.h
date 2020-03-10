@@ -47,6 +47,8 @@ private:
     uint8_t *pcm_buf_;
     int32_t pcm_buf_size_;
     const int PCM_BUF_MAX_SIZE = 32768; //
+
+    bool is_first_frame_ = false;
 };
 }
 #endif // AUDIOCAPTURER_H

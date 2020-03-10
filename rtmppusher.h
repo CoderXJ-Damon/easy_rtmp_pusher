@@ -59,6 +59,12 @@ private:
         FLV_CODECID_H264 = 7,
         FLV_CODECID_AAC = 10,
     };
+
+    bool is_first_metadata_ = false;    // 发送metadata
+    bool is_first_video_sequence_ = false;
+    bool is_first_video_frame_ = false;
+    bool is_first_audio_sequence_ = false;
+    bool is_first_audio_frame_ = false;
 };
 }
 #endif // RTMPPUSHER_H

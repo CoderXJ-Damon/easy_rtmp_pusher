@@ -30,10 +30,10 @@ enum SwsAlogrithm
 };
 
 
-class ImageScale
+class ImageScaler
 {
 public:
-    ImageScale(void) {
+    ImageScaler(void) {
         sws_ctx_ = NULL;
         src_pix_fmt_ = AV_PIX_FMT_NONE;
         dst_pix_fmt_ = AV_PIX_FMT_NONE;
@@ -51,7 +51,7 @@ public:
             m_nDstStride[i] = 0;
         }
     }
-    ~ImageScale(void) {
+    ~ImageScaler(void) {
         DeInit();
     }
     RET_CODE Init(uint32_t src_width, uint32_t src_height, int src_pix_fmt,

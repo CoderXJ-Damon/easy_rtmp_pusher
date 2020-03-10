@@ -1,6 +1,6 @@
-﻿#include "imagescale.h"
+﻿#include "ImageScale.h"
 
-//ImageScale::ImageScale()
+//ImageScaler::ImageScaler()
 //{
 
 //}

@@ -89,6 +89,61 @@ public:
     void set_video_pts_strategy(PTS_STRATEGY pts_strategy){
         video_pts_strategy_ = pts_strategy;
     }
+
+    uint32_t getCurrenTime() {
+        int64_t t = getCurrentTimeMsec() - start_time_;
+
+        return (uint32_t)(t%0xffffffff);
+
+    }
+    // 各个关键点的时间戳
+    inline const char *getKeyTimeTag() {
+        return "keytime";
+    }
+    // rtmp位置关键点
+    inline const char *getRtmpTag() {
+        return "keytime:rtmp_publish";
+    }
+
+    // 获取到metadata
+    inline const char *getMetadataTag() {
+        return "metadata";
+    }
+    // aac sequence header
+    inline const char *getAacHeaderTag() {
+        return "aacheader";
+    }
+    // aac raw data
+    inline const char *getAacDataTag() {
+        return "aacdata";
+    }
+    // avc sequence header
+    inline const char *getAvcHeaderTag() {
+        return "avcheader";
+    }
+
+    // 第一个i帧
+    inline const char *getAvcIFrameTag() {
+        return "avciframe";
+    }
+    // 第一个非i帧
+    inline const char *getAvcFrameTag() {
+        return "avcframe";
+    }
+    // 音视频解码
+    inline const char *getAcodecTag() {
+        return "keytime:acodec";
+    }
+    inline const char *getVcodecTag() {
+        return "keytime:vcodec";
+    }
+    // 音视频捕获
+    inline const char *getAInTag() {
+        return "keytime:ain";
+    }
+    inline const char *getVInTag() {
+        return "keytime:vint";
+    }
 private:
     int64_t getCurrentTimeMsec() {
 #ifdef _WIN32
