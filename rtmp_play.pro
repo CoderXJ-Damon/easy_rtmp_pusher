@@ -38,7 +38,7 @@ SOURCES += main_play.cpp \
     videooutputloop.cpp \
     avtimebase.cpp \ 
     packetqueue.cpp \
-    ImageScaler.cpp \
+    ImageScale.cpp \
     videodecodeloop.cpp
     
 win32 {

@@ -21,6 +21,8 @@ AudioDecodeLoop::~AudioDecodeLoop()
 
 RET_CODE AudioDecodeLoop::Init(const Properties &properties)
 {
+    cache_duration_ = properties.GetProperty("cache_duration", 500);
+
     aac_decoder_ = new AACDecoder();
     if(!aac_decoder_)
     {
@@ -71,6 +73,11 @@ void AudioDecodeLoop::Loop()
     RET_CODE ret = RET_OK;
     while(true)
     {
+        if(!cache_enough_) {
+            // 等等触发
+            semaphore_.wait();
+            LogInfo("get post");
+        }
         if(request_exit_)
             break;
 
@@ -91,7 +98,7 @@ void AudioDecodeLoop::Loop()
                             decode_frames_, pkt_queue_->get_nb_packets(),
                             play_time->getCurrenTime());
                 }
-//                LogInfo("apts:%lld, dts:%lld", frame->pts, frame->pkt_dts);
+                //                LogInfo("apts:%lld, dts:%lld", frame->pts, frame->pkt_dts);
                 if(_callable_post_frame_)
                     _callable_post_frame_(frame);
             }
@@ -119,14 +126,25 @@ void AudioDecodeLoop::Loop()
 
 void AudioDecodeLoop::Post(void *pkt)
 {
+    int64_t duration = pkt_queue_->get_duration();
     auto size = pkt_queue_->get_nb_packets();
     if(size > 15) {
         if(packet_cache_delay_++ > 5) {
             packet_cache_delay_ = 0; // 只是为了降低打印的频率
-            LogInfo("cache %d packet lead to delay\n", size);
+            LogInfo("cache %d packet lead to delay:%lld \n", size, duration);
         }
     }
     pkt_queue_->packet_queue_put((AVPacket *)pkt);
+
+    if(!cache_enough_ ) {
+
+        if(duration > cache_duration_)  {
+            cache_enough_ = true;
+            LogInfo("cache_duration = %d, post loop", duration);
+            // 触发
+            semaphore_.post();  // 唤醒解码线程
+        }
+    }
 }
 
 }

@@ -48,7 +48,7 @@ public:
             uint32_t diff = (uint32_t)abs(pts - (long long)(audio_pre_pts_ + audio_frame_duration_));
             if(diff < audio_frame_threshold_) {
                 // 误差在阈值范围内, 保持帧间隔
-                audio_pre_pts_ += audio_frame_duration_;
+                audio_pre_pts_ += audio_frame_duration_; //帧间隔累加，浮点数
                 LogDebug("get_audio_pts1:%u RECTIFY:%0.0lf", diff, audio_pre_pts_);
                 return (uint32_t)(((int64_t)audio_pre_pts_)%0xffffffff);
             }
@@ -105,30 +105,30 @@ public:
         return "keytime:rtmp_publish";
     }
 
-    // 获取到metadata
+    // 发送metadata
     inline const char *getMetadataTag() {
-        return "metadata";
+        return "keytime:metadata";
     }
     // aac sequence header
     inline const char *getAacHeaderTag() {
-        return "aacheader";
+        return "keytime:aacheader";
     }
     // aac raw data
     inline const char *getAacDataTag() {
-        return "aacdata";
+        return "keytime:aacdata";
     }
     // avc sequence header
     inline const char *getAvcHeaderTag() {
-        return "avcheader";
+        return "keytime:avcheader";
     }
 
     // 第一个i帧
     inline const char *getAvcIFrameTag() {
-        return "avciframe";
+        return "keytime:avciframe";
     }
     // 第一个非i帧
     inline const char *getAvcFrameTag() {
-        return "avcframe";
+        return "keytime:avcframe";
     }
     // 音视频解码
     inline const char *getAcodecTag() {

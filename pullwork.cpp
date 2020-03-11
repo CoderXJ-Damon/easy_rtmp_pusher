@@ -35,8 +35,8 @@ RET_CODE PullWork::Init(const Properties &properties)
 
     video_out_width_ = properties.GetProperty("video_out_width", 480);
     video_out_height_ = properties.GetProperty("video_out_height", 270);
-    audio_out_sample_rate_ = properties.GetProperty("audio_out_sample", 48000);
-
+    audio_out_sample_rate_ = properties.GetProperty("audio_out_sample_rate", 48000);
+    cache_duration_ = properties.GetProperty("cache_duration", 500);
     avsync_ = new AVSync();
     if(avsync_->Init(AV_SYNC_AUDIO_MASTER) != RET_OK)
     {
@@ -58,6 +58,7 @@ RET_CODE PullWork::Init(const Properties &properties)
                                                    std::placeholders::_1));
 
     Properties aud_loop_properties;
+    aud_loop_properties.SetProperty("cache_duration", cache_duration_);
     if(audio_decode_loop_->Init(aud_loop_properties)!= RET_OK)
     {
         LogError("audio_decode_loop_ Init failed");
@@ -290,6 +291,7 @@ void PullWork::pcmFrameCallback(void *frame)
     int getsize = audio_resampler_->GetFifoCurSize();
     auto dstframe = audio_resampler_->ReceiveResampledFrame(getsize);
 
+    // 适配音频输出格式
     if(audio_out_sdl_) {
         // linesize 由于数据padding的问题，不能直接使用其作为数据长度，否则容易出现各种断音
         int size = av_get_bytes_per_sample((AVSampleFormat)(dstframe.get()->format))
@@ -329,7 +331,6 @@ void PullWork::yuvFrameCallback(void *frame)
     resizedFrame->height = video_out_height_;
     avpicture_fill((AVPicture *)resizedFrame, buffer, video_out_format_, video_out_width_, video_out_height_);
     img_scale_->Scale(src_frame, resizedFrame);
-
     if(video_output_loop_)
         video_output_loop_->PushFrame(buffer, video_out_width_*video_out_height_*1.5, src_frame->pts);
     else

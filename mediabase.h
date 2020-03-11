@@ -19,6 +19,17 @@
 
 #include "dlog.h"
 
+
+enum CB_EVENT{
+    // 音频事件
+    EVT_AUD_PKT_CACHE_ENOUGH,   //
+    EVT_AUD_UNDER_RUN,      // 音频缺乏数据输出
+    // 视频事件
+
+    // RTMP拉流事件
+
+};
+
 #ifdef _MSC_VER
 static inline int strcasecmp(const char *s1, const char *s2)
 {

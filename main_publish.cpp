@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 //        }
 //        testAacEncoder("buweishui_48000_2_s16le.pcm", "buweishui.aac");
     {
-        PushWork pushwork;
+        PushWork pushwork; // 可以实例化多个，同时推送多路流
 
         Properties properties;
         // 音频test模式

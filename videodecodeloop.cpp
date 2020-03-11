@@ -124,8 +124,9 @@ void VideoDecodeLoop::Loop()
         if (pkt.data != NULL && pkt.size!=0)
         {
             LogDebug("nalu type:%d, size:%d", 0x1f & pkt.data[4], pkt.size);
-            if(h264_decoder_->SendPacket(&pkt) != RET_OK)
-                LogError("SendPacket failed, which is an API violation.\n");
+            if(h264_decoder_->SendPacket(&pkt) != RET_OK) {
+//                LogError("SendPacket failed, which is an API violation.\n");
+            }
             av_packet_unref(&pkt);
         } else {
             LogWarn("pkt null");

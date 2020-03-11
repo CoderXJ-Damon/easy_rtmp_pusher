@@ -59,6 +59,9 @@ private:
     int video_out_width_ = 480;
     int video_out_height_ = 270;
     AVPixelFormat video_out_format_ = AV_PIX_FMT_YUV420P;
+
+    // 缓存控制
+    int cache_duration_ = 500;
 };
 }
 #endif // PULLWORK_H

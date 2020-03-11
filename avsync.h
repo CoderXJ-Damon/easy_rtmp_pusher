@@ -178,12 +178,14 @@ public:
         LogDebug("video pts:%lld", pts);
         vidclk->set_clock(pts, serial);
     }
+
     void update_audio_pts(const int64_t pts, const int serial) {
         LogDebug("audio pts:%lld", pts);
         if(abs(pts - audclk->get_clock()) > audio_frame_druation_/2)  {
             audclk->set_clock(pts, serial);
         }
     }
+
     AV_FRAME_SYNC_RESULT GetVideoSyncResult(const int64_t pts, const int duration, int64_t &get_diff)
     {
         video_frame_druation_ = duration;

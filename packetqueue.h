@@ -168,7 +168,13 @@ public:
      inline int get_nb_packets() {
          return nb_packets;
      }
-
+     inline int64_t get_duration() {
+         int64_t temp_duration = 0;
+         SDL_LockMutex(mutex);
+         temp_duration = duration;
+         SDL_UnlockMutex(mutex);
+         return  temp_duration ;
+     }
 private:
     int packet_queue_put_private(AVPacket *pkt)
     {

@@ -161,7 +161,7 @@ RET_CODE H264Decoder::SendPacket(const AVPacket *avpkt)
         //        LogWarn("avcodec_send_packet failed, RET_ERR_EAGAIN.\n");
         return RET_ERR_EAGAIN;
     } else if(AVERROR_EOF) {
-        LogWarn("avcodec_send_packet failed, RET_ERR_EOF.\n");
+//        LogWarn("avcodec_send_packet failed, RET_ERR_EOF.\n");
         return RET_ERR_EOF;
     } else {
         LogError("avcodec_send_packet failed, AVERROR(EINVAL) or AVERROR(ENOMEM) or other...\n");
@@ -189,7 +189,7 @@ RET_CODE H264Decoder::ReceiveFrame(AVFrame *frame)
         //        LogWarn("avcodec_receive_frame failed, RET_ERR_EAGAIN.\n");
         return RET_ERR_EAGAIN;
     } else if(AVERROR_EOF) {
-        LogWarn("avcodec_receive_frame failed, RET_ERR_EOF.\n");
+//        LogWarn("avcodec_receive_frame failed, RET_ERR_EOF.\n");
         return RET_ERR_EOF;
     } else {
         LogError("avcodec_receive_frame failed, AVERROR(EINVAL) or AVERROR(ENOMEM) or other...\n");

@@ -329,26 +329,40 @@ void* RTMPPlayer::readPacketThread()
                     LogDebug("vpts:%u, t:%u", video_pre_pts_, packet.m_nTimeStamp);
 
                     uint32_t offset = 5;
-                    uint8_t ch0 = packet.m_body[offset];
-                    uint8_t ch1 = packet.m_body[offset + 1];
-                    uint8_t ch2 = packet.m_body[offset + 2];
-                    uint8_t ch3 = packet.m_body[offset + 3];
-                    uint32_t data_len = ((ch0 << 24) | (ch1 << 16) | (ch2 << 8) | ch3);
-                    memcpy(&packet.m_body[offset], nalu_header, 4);
-                    AVPacket nalu_pkt = {0};
-                    nalu_pkt.size = data_len + 4;
-                    nalu_pkt.data = (uint8_t *)av_malloc(nalu_pkt.size);
-                    offset += 4;
-                    if(av_packet_from_data(&nalu_pkt, nalu_pkt.data, nalu_pkt.size) == 0) {
-                        memcpy(&nalu_pkt.data[0], nalu_header, 4);
-                        memcpy(&nalu_pkt.data[4], (uint8_t *)&packet.m_body[offset], data_len);
-                        nalu_pkt.duration = duration;
-                        nalu_pkt.dts = video_pre_pts_;
-                        if(keyframe)
-                            nalu_pkt.flags = AV_PKT_FLAG_KEY;
-                        video_packet_callable_object_(&nalu_pkt);  // 发送包
-                    } else {
-                        LogError("av_packet_from_data nalu_pkt failed");
+                    while(offset < packet.m_nBodySize)
+                    {
+                        uint8_t ch0 = packet.m_body[offset];
+                        uint8_t ch1 = packet.m_body[offset + 1];
+                        uint8_t ch2 = packet.m_body[offset + 2];
+                        uint8_t ch3 = packet.m_body[offset + 3];
+                        uint32_t data_len = ((ch0 << 24) | (ch1 << 16) | (ch2 << 8) | ch3);
+                        memcpy(&packet.m_body[offset], nalu_header, 4);
+                        offset += 4; // 跳过data_len占用的4字节
+                        uint8_t nalu_type = 0x1f &  packet.m_body[4];
+//                        LogError("nalu_type:%d", nalu_type);
+//                        if(nalu_type <= 0x5 // sei
+//                                || nalu_type == 8
+//                                || nalu_type == 16) //单元分隔符
+                        {
+                            AVPacket nalu_pkt = {0};
+                            nalu_pkt.size = data_len + 4;
+                            nalu_pkt.data = (uint8_t *)av_malloc(nalu_pkt.size);
+
+                            if(av_packet_from_data(&nalu_pkt, nalu_pkt.data, nalu_pkt.size) == 0) {
+                                memcpy(&nalu_pkt.data[0], nalu_header, 4);
+                                memcpy(&nalu_pkt.data[4], (uint8_t *)&packet.m_body[offset], data_len);
+
+                                nalu_pkt.duration = duration;
+                                nalu_pkt.dts = video_pre_pts_;
+                                if(keyframe)
+                                    nalu_pkt.flags = AV_PKT_FLAG_KEY;
+
+                                video_packet_callable_object_(&nalu_pkt);  // 发送包
+                            } else {
+                                LogError("av_packet_from_data nalu_pkt failed");
+                            }
+                        }
+                        offset += data_len; // 跳过data_len
                     }
                 } else {
                     LogWarn("unhandle data");
@@ -442,6 +456,7 @@ void* RTMPPlayer::readPacketThread()
                     aac_pkt.size = data_len;
                     aac_pkt.data =  (uint8_t *)av_malloc(aac_pkt.size);
                     if(av_packet_from_data(&aac_pkt, aac_pkt.data, aac_pkt.size) == 0) {
+                        // 带 adts header
                         memcpy(&aac_pkt.data[0], adts, 7);
                         memcpy(&aac_pkt.data[7], packet.m_body + 2, packet.m_nBodySize - 2);
                         aac_pkt.duration = duration;

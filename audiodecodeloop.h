@@ -9,6 +9,7 @@
 #include "commonlooper.h"
 #include "mediabase.h"
 #include "packetqueue.h"
+#include "semaphore.h"
 
 namespace LQF {
 class AudioDecodeLoop : public CommonLooper
@@ -25,6 +26,9 @@ public:
     void addFrameCallback(std::function<void(void*)> callableObject)
     {
         _callable_post_frame_ = callableObject;
+    }
+
+    void AddEventCallback(std::function<int(void*)> callableObject) {
     }
      virtual void Loop();
     void Post(void *);
@@ -44,6 +48,9 @@ private:
 
     int		pkt_serial;         // 包序列
     int packet_cache_delay_ = 0;
+    int cache_duration_ = 1000; // 默认是1秒
+    bool cache_enough_ = false;
+    Semaphore semaphore_;
 };
 
 }

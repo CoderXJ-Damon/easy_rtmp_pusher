@@ -163,7 +163,8 @@ RTMP_GetTime()
     return 0;
 #elif defined(_WIN32)
 //    #if defined(_WIN32)
-    return timeGetTime();
+//    return timeGetTime();
+    return 0;
 #else
     struct tms t;
     if (!clk_tck) clk_tck = sysconf(_SC_CLK_TCK);
