@@ -1,5 +1,4 @@
 ﻿#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -35,7 +34,7 @@ enum RTMPChannel
 #define FLV_NAME "rtmp_test_hd.flv"
 // #define RTMP_URL "rtmp://192.168.1.5/live_cctv/35"
 // #define RTMP_URL "rtmp://push.edu.paimon.cn/live/test?txSecret=94f1d816876e61423b6b14e05bdc65f2^&txTime=5CC870FF"
-#define RTMP_URL "rtmp://192.168.1.11/live/35"
+#define RTMP_URL "rtmp://192.168.1.12/live/35"
 #ifdef _WIN32
 #include <Windows.h>
 #endif

@@ -565,7 +565,7 @@ AMF3Prop_Decode(AMFObjectProperty *prop, const char *pBuffer, int nSize,
     }
 
   /* decode */
-  type = *pBuffer++;
+  type = (AMF3DataType)(*pBuffer++);
   nSize--;
 
   switch (type)
@@ -700,7 +700,7 @@ AMFProp_Decode(AMFObjectProperty *prop, const char *pBuffer, int nSize,
 
   nSize--;
 
-  prop->p_type = *pBuffer++;
+  prop->p_type = (AMFDataType)(*pBuffer++);
   switch (prop->p_type)
     {
     case AMF_NUMBER:

@@ -2,13 +2,17 @@
 #define AACENCODER_H
 
 
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
-}
+#ifdef __cplusplus
+};
+#endif
 #include "mediabase.h"
 #include "codecs.h"
-#include "audio.h"
 class AACEncoder //: public AudioEncoder
 {
 public:
@@ -24,6 +28,7 @@ public:
     RET_CODE Init(const Properties &properties);
     virtual ~AACEncoder();
     virtual int Encode(AVFrame *frame, uint8_t* out, int out_len);
+    virtual AVPacket * Encode(AVFrame *frame,int64_t pts,  const int flush = 0);
     virtual RET_CODE EncodeInput(const uint8_t *in, const uint32_t size);
     virtual RET_CODE EncodeInput(const AVFrame *frame);
     virtual RET_CODE EncodeOutput(AVPacket *pkt);
@@ -92,6 +97,9 @@ public:
         adts_header[5] = (((frame_length & 7) << 5) + 0x1F);
         adts_header[6] = 0xFC;
     }
+    AVCodecContext* GetCodecContext() {
+        return ctx_;
+    }
 private:
     // 需要配置的参数
     int sample_rate_; // 默认 48000
@@ -103,8 +111,8 @@ private:
     AVCodecContext	*ctx_;
     AVFrame         *frame_;
 
-//    int samplesSize_;
-//    int samplesNum_;
+    //    int samplesSize_;
+    //    int samplesNum_;
 
 
 

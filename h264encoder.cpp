@@ -214,4 +214,48 @@ int H264Encoder::get_pps(uint8_t *pps, int &pps_len)
     memcpy(pps, pps_.c_str(), pps_len);
     return 0;
 }
+
+AVPacket *H264Encoder::Encode(uint8_t *yuv, uint64_t pts, const int flush)
+{
+    frame_->data[0] = yuv;                         // Y
+    frame_->data[1] = yuv + data_size_;              // U
+    frame_->data[2] = yuv + data_size_ * 5 / 4;      // V
+
+
+    if (pts != 0) {
+        frame_->pts = pts;
+    }
+    else {
+        frame_->pts = pts_++;
+    }
+    AVRational src_time_base = AVRational{1, 1000};
+    //    frame_->pts =av_rescale_q(frame_->pts, src_time_base, ctx_->time_base);
+    //            (frame_->pts)*(ctx_->time_base.den) / ((ctx_->time_base.num) * 25);  //时间戳
+
+
+    frame_->pict_type = AV_PICTURE_TYPE_NONE;
+    //    if (force_idr_) {
+    //        frame_->pict_type = AV_PICTURE_TYPE_I;
+    //        force_idr_ = false;
+    //    }
+
+    if (avcodec_send_frame(ctx_, frame_) < 0) {
+        LogError("avcodec_send_frame() failed.\n");
+        return NULL;
+    }
+
+    AVPacket *packet = av_packet_alloc();
+
+    int ret = avcodec_receive_packet(ctx_, packet);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+        return NULL;
+    }
+    else if (ret < 0) {
+        LogError("avcodec_receive_packet() failed.");
+        return NULL;
+    }
+//    LogInfo("vpts1:%ld", frame_->pts);
+//    LogInfo("vpts2:%ld", packet->pts);
+    return packet;
+}
 }

@@ -25,6 +25,13 @@ RET_CODE VideoCapturer::Init(const Properties &properties)
     pixel_format_ = properties.GetProperty("pixel_format", 0);
     fps_ = properties.GetProperty("fps", 25);
     frame_duration_ = 1000.0 / fps_;
+
+    if(openYuvFile(input_yuv_name_.c_str()) != 0)
+    {
+        LogError("openYuvFile %s failed", input_yuv_name_.c_str());
+        return RET_FAIL;
+    }
+
     return RET_OK;
 }
 
@@ -34,11 +41,7 @@ void VideoCapturer::Loop()
 
     yuv_buf_size = width_ * height_ * 1.5;
     yuv_buf_ = new uint8_t[yuv_buf_size];
-    if(openYuvFile(input_yuv_name_.c_str()) != 0)
-    {
-        LogError("openYuvFile %s failed", input_yuv_name_.c_str());
-        return;
-    }
+
     yuv_total_duration_ = 0;
     yuv_start_time_ = TimesUtil::GetTimeMillisecond();
     LogInfo("into loop while");

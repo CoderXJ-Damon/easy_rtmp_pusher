@@ -12,7 +12,6 @@
 #ifndef _MSC_VER
 #include <strings.h>
 #endif
-#include <stdlib.h>
 #include <ctype.h>
 
 #include "librtmp/rtmp.h"
@@ -579,7 +578,7 @@ public:
     int videocodecid = -1;
     int64_t videodatarate = 0;
     int width = 0;
-
+    int64_t pts = 0;
 };
 
 
@@ -624,6 +623,7 @@ public:
     uint8_t profile_ = 2;   //2 : AAC LC(Low Complexity)
     uint8_t channels_ = 2;
     uint32_t sample_rate_ = 48000;
+    int64_t pts_;
 };
 
 class NaluStruct :public MsgBaseObj
@@ -670,6 +670,7 @@ public:
     unsigned int    nHeight;
     unsigned int    nFrameRate;     // fps
     unsigned int    nVideoDataRate; // bps
+    int64_t pts_ = 0;
 };
 
 struct MsgRTMPPPack : MsgBaseObj

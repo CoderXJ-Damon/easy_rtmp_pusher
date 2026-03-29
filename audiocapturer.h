@@ -26,13 +26,12 @@ public:
     virtual void Loop();
     void AddCallback(function<void(uint8_t*, int32_t)> callback)
     {
-      callback_get_pcm_ = callback;
+        callback_get_pcm_ = callback;
     }
 private:
     // 初始化参数
     int audio_test_ = 0;
     std::string input_pcm_name_;
-    int sample_rate_;
     // PCM file只是用来测试, 写死为s16格式 2通道 采样率48Khz
     // 1帧1024采样点持续的时间21.333333333333333333333333333333ms
     int openPcmFile(const char *file_name);
@@ -49,6 +48,8 @@ private:
     const int PCM_BUF_MAX_SIZE = 32768; //
 
     bool is_first_frame_ = false;
+
+    int sample_rate_ = 48000;
 };
 }
 #endif // AUDIOCAPTURER_H

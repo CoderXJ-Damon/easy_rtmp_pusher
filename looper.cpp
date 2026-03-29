@@ -31,11 +31,11 @@ Looper::~Looper()
 }
 
 //
-void Looper::Post(int what, MsgBaseObj *data, bool flush)
+void Looper::Post(int what, void *data, bool flush)
 {
     LooperMessage *msg = new LooperMessage();
     msg->what = what;
-    msg->obj = data;
+    msg->obj = (MsgBaseObj *)data;
     msg->quit = false;
     addmsg(msg, flush);
 }
@@ -151,7 +151,7 @@ void Looper::Stop()
     }
 }
 
-void Looper::handle(int what, MsgBaseObj* obj)
+void Looper::handle(int what, void* obj)
 {
     LogInfo("dropping msg %d %p", what, obj);
 }

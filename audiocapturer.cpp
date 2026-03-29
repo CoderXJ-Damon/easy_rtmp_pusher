@@ -21,10 +21,16 @@ RET_CODE AudioCapturer::Init(const Properties &properties)
 {
     audio_test_ = properties.GetProperty("audio_test", 0);
     input_pcm_name_ = properties.GetProperty("input_pcm_name", "buweishui_48000_2_s16le.pcm");
+    sample_rate_ = properties.GetProperty("sample_rate", 48000);
     pcm_buf_ = new uint8_t[PCM_BUF_MAX_SIZE];
     if(!pcm_buf_)
     {
         return RET_ERR_OUTOFMEMORY;
+    }
+    if(openPcmFile(input_pcm_name_.c_str()) != 0)
+    {
+        LogError("openPcmFile %s failed", input_pcm_name_.c_str());
+        return RET_FAIL;
     }
     return RET_OK;
 }
@@ -34,11 +40,7 @@ void AudioCapturer::Loop()
     LogInfo("into loop");
 
     int nb_samples = 1024;
-    if(openPcmFile(input_pcm_name_.c_str()) != 0)
-    {
-        LogError("openPcmFile %s failed", input_pcm_name_.c_str());
-        return;
-    }
+
     pcm_total_duration_ = 0;
     pcm_start_time_ = TimesUtil::GetTimeMillisecond();
     LogInfo("into loop while");
@@ -55,7 +57,7 @@ void AudioCapturer::Loop()
             }
             if(callback_get_pcm_)
             {
-                callback_get_pcm_(pcm_buf_, nb_samples *4);
+                callback_get_pcm_(pcm_buf_, nb_samples *4); // 2通道 s16格式
             }
         }
 

@@ -1,7 +1,6 @@
 ﻿#ifndef PUSHWORK_H
 #define PUSHWORK_H
 #include "mediabase.h"
-#include "videodecodeloop.h"
 #include "audiocapturer.h"
 #include "aacencoder.h"
 #include "audioresample.h"
@@ -56,6 +55,7 @@ public:
      * @return
      */
     RET_CODE Init(const Properties& properties);
+    void DeInit();
     // Audio编码后的数据回调
     void AudioCallback(NaluStruct* nalu_data);
     // Video编码后的数据回调
@@ -64,6 +64,7 @@ public:
     void PcmCallback(uint8_t* pcm, int32_t size);
     // 数据回调
     void YuvCallback(uint8_t* yuv, int32_t size);
+    void Loop();
 private:
     // 音频test模式
     int audio_test_ = 0;

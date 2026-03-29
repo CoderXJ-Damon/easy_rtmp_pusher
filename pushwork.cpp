@@ -193,11 +193,12 @@ RET_CODE PushWork::Init(const Properties &properties)
     metadata->framerate = video_encoder_->get_framerate();
     metadata->videodatarate = video_encoder_->get_bit_rate();
     // 设置音频相关
-    metadata->has_audio = false;
+    metadata->has_audio = true;
     metadata->channles = audio_encoder_->get_channels();
     metadata->audiosamplerate = audio_encoder_->get_sample_rate();
     metadata->audiosamplesize = 16;
-    metadata->audiodatarate = 125;
+    metadata->audiodatarate = 64;
+    metadata->pts = 0;
     rtmp_pusher->Post(RTMP_BODY_METADATA, metadata, false);
 
     // 设置音频pts的间隔
@@ -252,6 +253,55 @@ RET_CODE PushWork::Init(const Properties &properties)
     return RET_OK;
 }
 
+void PushWork::DeInit()
+{
+    if(audio_capturer_) {
+        delete audio_capturer_;
+        audio_capturer_ = NULL;
+    }
+    if(audio_encoder_) {
+        delete audio_encoder_;
+        audio_encoder_ = NULL;
+    }
+    if(video_capturer) {
+        delete video_capturer;
+        video_capturer = NULL;
+    }
+    if(audio_resampler_) {
+        delete audio_resampler_;
+        audio_resampler_ = NULL;
+    }
+    if(video_encoder_) {
+        delete video_encoder_;
+        video_encoder_ = NULL;
+    }
+    if(rtmp_pusher) {
+        delete rtmp_pusher;
+        rtmp_pusher = NULL;
+    }
+
+    if(video_out_sdl) {
+        delete video_out_sdl;
+        video_out_sdl = NULL;
+    }
+
+    if(h264_fp_) {
+        fclose(h264_fp_);
+        h264_fp_ = NULL;
+    }
+    if(aac_fp_) {
+        fclose(aac_fp_);
+        aac_fp_ = NULL;
+    }
+    if(pcm_flt_fp_) {
+        fclose(pcm_flt_fp_);
+        pcm_flt_fp_ = NULL;
+    }
+    if(pcm_s16le_fp_) {
+        fclose(pcm_s16le_fp_);
+        pcm_s16le_fp_ = NULL;
+    }
+}
 void PushWork::AudioCallback(NaluStruct *nalu_data)
 {
 
@@ -264,7 +314,6 @@ void PushWork::VideoCallback(NaluStruct *nalu_data)
 
 void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
 {
-
     if(!pcm_s16le_fp_)
     {
         pcm_s16le_fp_ = fopen("push_dump_s16le.pcm", "wb");
@@ -282,6 +331,7 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
         AudioSpecMsg *aud_spc_msg = new AudioSpecMsg(audio_encoder_->get_profile(),
                                                      audio_encoder_->get_channels(),
                                                      audio_encoder_->get_sample_rate());
+        aud_spc_msg->pts_ = 0;
         rtmp_pusher->Post(RTMP_BODY_AUD_SPEC, aud_spc_msg);
     }
     // 音频重采样
@@ -344,7 +394,7 @@ void PushWork::PcmCallback(uint8_t *pcm, int32_t size)
 void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
 {
     if(video_out_sdl)
-        video_out_sdl->Output(yuv, size);
+        video_out_sdl->Cache(yuv, size);
     char start_code[] = {0, 0, 0, 1};
     if(need_send_video_config)
     {
@@ -359,6 +409,7 @@ void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
         vid_config_msg->nHeight = video_height_;
         vid_config_msg->nFrameRate = video_fps_;
         vid_config_msg->nVideoDataRate = video_bitrate_;
+        vid_config_msg->pts_ = 0;
         rtmp_pusher->Post(RTMP_BODY_VID_CONFIG, vid_config_msg);
         if(h264_fp_)
         {
@@ -386,6 +437,13 @@ void PushWork::YuvCallback(uint8_t* yuv, int32_t size)
 //               video_nalu_size_, 1, h264_fp_);
 //        fflush(h264_fp_);
     }
+}
+void PushWork::Loop()
+{
+    LogInfo("Loop into");
+    if(video_out_sdl)
+        video_out_sdl->Loop();          // 目前一定要用debug模式
+    LogInfo("Loop leave");
 }
 }
 

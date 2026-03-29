@@ -1,8 +1,6 @@
 ﻿#ifndef AVTIMEBASE_H
 #define AVTIMEBASE_H
 #include <stdint.h>
-namespace LQF {
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <time.h>
@@ -10,6 +8,9 @@ namespace LQF {
 #include <sys/time.h>
 #endif
 #include "dlog.h"
+namespace LQF {
+
+
 class AVPublishTime
 {
 public:

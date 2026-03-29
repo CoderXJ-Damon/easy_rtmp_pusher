@@ -46,7 +46,7 @@ public:
 
     bool SendAudioSpecificConfig(char* data,int length);
 private:
-    virtual void handle(int what, MsgBaseObj *data);
+    virtual void handle(int what, void *data);
     bool sendH264SequenceHeader(VideoSequenceHeaderMsg *seq_header);
     bool sendH264Packet(char *data,int size, bool is_keyframe, unsigned int timestamp);
     //bool SendAACPacket(char *data,int size, unsigned int timestamp);

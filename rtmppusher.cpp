@@ -62,7 +62,7 @@ char * put_amf_double(char *c, double d)
     return c + 8;
 }
 
-void RTMPPusher::handle(int what, MsgBaseObj *data)
+void RTMPPusher::handle(int what, void *data)
 {
     LogDebug("into");
     //要加是否断开连接逻辑
@@ -259,7 +259,7 @@ bool RTMPPusher::sendH264SequenceHeader(VideoSequenceHeaderMsg *seq_header)
     // sps nums
     body[i++] = 0xE1;                 //&0x1f
     // sps data length
-    body[i++] = seq_header->sps_size_ >> 8;
+    body[i++] = (seq_header->sps_size_ >> 8) & 0xff;;
     body[i++] = seq_header->sps_size_ & 0xff;
     // sps data
     memcpy(&body[i], seq_header->sps_, seq_header->sps_size_);
@@ -268,7 +268,7 @@ bool RTMPPusher::sendH264SequenceHeader(VideoSequenceHeaderMsg *seq_header)
     // pps nums
     body[i++] = 0x01; //&0x1f
     // pps data length
-    body[i++] = seq_header->pps_size_ >> 8;
+    body[i++] = (seq_header->pps_size_ >> 8) & 0xff;;
     body[i++] = seq_header->pps_size_ & 0xff;
     // sps data
     memcpy(&body[i], seq_header->pps_, seq_header->pps_size_);
@@ -296,7 +296,6 @@ bool RTMPPusher::SendAudioSpecificConfig(char* data,int length)
 
     packet.m_headerType  = RTMP_PACKET_SIZE_LARGE;
     packet.m_packetType = RTMP_PACKET_TYPE_AUDIO;
-    packet.m_hasAbsTimestamp = 0;
     packet.m_nChannel   = RTMP_AUDIO_CHANNEL;
     packet.m_nTimeStamp = 0;
     packet.m_nInfoField2 = rtmp_->m_stream_id;
@@ -308,7 +307,6 @@ bool RTMPPusher::SendAudioSpecificConfig(char* data,int length)
     {
         LogInfo("RTMP_SendPacket fail %d\n",nRet);
     }
-    //int nRet = RTMP_SendPacket(rtmp, &packet, TRUE);
     RTMPPacket_Free(&packet);//释放内存
     return (nRet = 0?true:false);
 }
@@ -371,13 +369,14 @@ int RTMPPusher::sendPacket(unsigned int packet_type, unsigned char *data,
     else if(packet_type == RTMP_PACKET_TYPE_VIDEO)
     {
         packet.m_nChannel = RTMP_VIDEO_CHANNEL;
-        //              LogInfo("video packet timestamp:%u, size:%u", timestamp, size);
+//                      LogInfo("video packet timestamp:%u, size:%u", timestamp, size);
     }
     else
     {
         packet.m_nChannel = RTMP_NETWORK_CHANNEL;
     }
-    packet.m_headerType = RTMP_PACKET_SIZE_MEDIUM;
+     packet.m_nChannel = RTMP_AUDIO_CHANNEL;
+    packet.m_headerType = RTMP_PACKET_SIZE_LARGE;
     packet.m_nTimeStamp = timestamp;
     packet.m_nInfoField2 = rtmp_->m_stream_id;
     packet.m_nBodySize = size;

@@ -130,6 +130,40 @@ int AACEncoder::Encode(AVFrame *frame,uint8_t* out,int out_len)
     return pkt.size;
 }
 
+AVPacket * AACEncoder::Encode(AVFrame *frame, int64_t pts, const int flush)
+{
+    AVPacket *packet = NULL;
+    int ret = 0;
+    AVRational src_time_base = AVRational{1, 1000};
+    frame->pts = pts;
+
+    if (ctx_ == NULL)
+    {
+        LogError("AAC: no context.\n");
+        return NULL;
+    }
+    if(frame){
+        int ret = avcodec_send_frame(ctx_, frame);
+        if (ret != 0) {
+            LogError("avcodec_send_frame failed");
+            return NULL;
+        }
+    }
+
+    packet = av_packet_alloc();
+    ret = avcodec_receive_packet(ctx_, packet);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+        return NULL;
+    }
+    else if (ret < 0) {
+        LogError("avcodec_receive_packet() failed.");
+        return NULL;
+    }
+    //    LogInfo("apts1:%ld", frame_->pts);
+    //    LogInfo("apts2:%ld", packet->pts);
+    return packet;
+}
+
 /**
  * @brief 每次需要输入足够进行一次编码的数据
  * @param in

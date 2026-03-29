@@ -8,7 +8,11 @@
 #include <memory>
 #include <iostream>
 
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "libavutil/audio_fifo.h"
 #include "libavutil/opt.h"
 #include "libavutil/avutil.h"
@@ -16,7 +20,9 @@ extern "C" {
 #include "libavutil/error.h"
 #include "libavutil/frame.h"
 #include "libavcodec/avcodec.h"
-}
+#ifdef __cplusplus
+};
+#endif
 namespace LQF {
 using::std::string;
 using::std::vector;

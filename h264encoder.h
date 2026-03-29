@@ -1,10 +1,15 @@
 ﻿#ifndef H264ENCODER_H
 #define H264ENCODER_H
 #include "mediabase.h"
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
-}
+#ifdef __cplusplus
+};
+#endif
 
 
 
@@ -50,6 +55,10 @@ public:
     inline int get_pps_size(){
         return pps_.size();
     }
+    virtual AVPacket *Encode(uint8_t *yuv, uint64_t pts = 0, const int flush = 0);
+    AVCodecContext* GetCodecContext() {
+        return ctx_;
+    }
 private:
     int count;
     int data_size_;
@@ -79,6 +88,8 @@ private:
     AVCodec* codec_ = NULL;
     AVDictionary *param = NULL;
     AVCodecContext* ctx_ = NULL;
+
+    int64_t pts_ = 0;
 };
 }
 #endif // H264ENCODER_H

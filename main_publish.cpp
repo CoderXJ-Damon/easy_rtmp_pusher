@@ -22,18 +22,19 @@ extern "C" {
 #include "pushwork.h"
 #include "timeutil.h"
 using namespace LQF;
-extern int rtmpPull(int argc, char* argv[]);
-extern int rtmpPublish(int argc, char* argv[]);
-extern int testAacEncoder(const char *pcmFileName, const char* aacFileName);
+
 #undef main
 
 //#define RTMP_URL "rtmp://111.229.231.225/live/livestream"
-#define RTMP_URL "rtmp://192.168.1.12/live/livestream"
+#define RTMP_URL "rtmp://114.215.169.66/live/livestream"
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
+// ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://192.168.1.12/live/livestream
 //// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 int main(int argc, char* argv[])
 {
     init_logger("rtmp_push.log", S_INFO);
+//    rtmpPublish(0, NULL);
+//    return 0;
     //    rtmpPublish(argc, argv);
 //        {
 //        auto frame = shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) {
@@ -68,6 +69,8 @@ int main(int argc, char* argv[])
         //    properties.SetProperty("desktop_pixel_format", AV_PIX_FMT_YUV420P);
         properties.SetProperty("desktop_fps", 25);//测试模式时和yuv文件的帧率一致
         // 视频编码属性
+        properties.SetProperty("video_bitrate", 512*1024);  // 设置码率
+
         // 使用缺省的
         // rtmp推流
         properties.SetProperty("rtmp_url", RTMP_URL);//测试模式时和yuv文件的帧率一致
@@ -75,28 +78,14 @@ int main(int argc, char* argv[])
         if(pushwork.Init(properties) != RET_OK)
         {
             LogError("pushwork.Init failed");
-            getchar();
+			pushwork.DeInit();
             return 0;
         }
-
-
-
-//        int count = 0;
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-//            if(count++ > 1200)
-//                break;
-        }
+        pushwork.Loop();
 
     } // 测试析构
-    //  屏幕打印：调试 耗时1200ms，直接运行700ms,
-    // 写到本地文件：调试31ms，直接运行16ms
-    int64_t cur_time = TimesUtil::GetTimeMillisecond();
-    for(int i = 0; i < 1000; i++) {
-        LogError(" properties.SetProperty properties.SetProperty properties.SetProperty");
-    }
-    printf("t:%lld", TimesUtil::GetTimeMillisecond() - cur_time);
-    getchar();
+
+	printf("rtmp push finish");
     return 0;
 }
 

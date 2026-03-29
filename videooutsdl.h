@@ -1,47 +1,46 @@
 ﻿#ifndef VIDEOOUTSDL_H
 #define VIDEOOUTSDL_H
 #include <SDL.h>
+#include <SDL_thread.h>
 #include "mediabase.h"
 namespace LQF {
+
+//定义分辨率
+// 窗口分辨率
+#define WIN_WIDTH  320
+#define YUV_WIDTH  240
+// YUV像素分辨率
+#define YUV_WIDTH   320
+#define YUV_HEIGHT  240
+//定义YUV格式
+#define YUV_FORMAT  SDL_PIXELFORMAT_IYUV
 
 class VideoOutSDL
 {
 public:
     VideoOutSDL();
     virtual ~VideoOutSDL();
-    /**
-     * @brief Init 初始化显示参数
-     * @param "video_width" 画面宽度,必须设置
-     *        "video_height" 画面高度,必须设置
-     *        "pixformat"像素格式，缺省为SDL_PIXELFORMAT_IYUV
-     *        "win_x_", 窗口的起始位置, 缺省位于屏幕中间显示
-     *        "win_y_", 窗口的起始位置, 缺省位于屏幕中间显示
-     *        "win_width" 窗口宽度,缺省为video_width
-     *        "win_height" 窗口高度,video_height
-     *        "win_title" 窗口名字, 缺省为"sdl display"
-     *
-     * @return
-     */
     virtual RET_CODE Init(const Properties &properties);
-    virtual RET_CODE Output(const uint8_t *video_buf, const uint32_t size);
+    virtual RET_CODE Cache(uint8_t *video_buf, uint32_t size);
+    virtual RET_CODE Output(uint8_t *video_buf, uint32_t size);
+    virtual RET_CODE Loop();
 private:
     // SDL
-    SDL_Event event_;                            // 事件
-    SDL_Rect rect_;                              // 矩形
-    SDL_Window *win_ = NULL;                     // 窗口
-    SDL_Renderer *renderer_ = NULL;              // 渲染
-    SDL_Texture *texture_ = NULL;                // 纹理
-
+    SDL_Event event;                            // 事件
+    SDL_Rect rect;                              // 矩形
+    SDL_Window *win = NULL;                     // 窗口
+    SDL_Renderer *renderer = NULL;              // 渲染
+    SDL_Texture *texture = NULL;                // 纹理
+    uint32_t pixformat = YUV_FORMAT;            // YUV420P，即是SDL_PIXELFORMAT_IYUV
+    SDL_mutex *mutex;
     
-    // Init涉及的参数设置
-    int video_height_ = 720;
-    int video_width_ = 1280;
-    int pixformat_ = SDL_PIXELFORMAT_IYUV;            // YUV420P，即是 SDL_PIXELFORMAT_IYUV
-    int win_x_ = SDL_WINDOWPOS_UNDEFINED;
-    int win_y_ = SDL_WINDOWPOS_UNDEFINED;
-    int win_width_ = 1280;
-    int win_height_ = 720;
-    std::string win_title_;
+    // 分辨率
+    int video_width = YUV_WIDTH;
+    int video_height = YUV_HEIGHT;
+    int win_width = YUV_WIDTH;
+    int win_height = YUV_WIDTH;
+    int video_buf_size_;
+    uint8_t *video_buf_;
 };
 }
 
