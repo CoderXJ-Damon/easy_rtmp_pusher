@@ -42,7 +42,7 @@ LIBS += $$PWD/ffmpeg-4.2.1-win32-dev/lib/avformat.lib   \
         $$PWD/ffmpeg-4.2.1-win32-dev/lib/swresample.lib \
         $$PWD/ffmpeg-4.2.1-win32-dev/lib/swscale.lib
 #LIBS += D:\Qt\Qt5.10.1\Tools\mingw530_32\i686-w64-mingw32\lib\libws2_32.a
-LIBS += D:\Qt\Qt5.10.1\Tools\mingw530_32\i686-w64-mingw32\lib\libws2_32.a
+LIBS += C:\Qt\Qt5.10.1\Tools\mingw530_32\i686-w64-mingw32\lib\libws2_32.a
 
 INCLUDEPATH += $$PWD/SDL2/include
 LIBS += $$PWD/SDL2/lib/x86/SDL2.lib
