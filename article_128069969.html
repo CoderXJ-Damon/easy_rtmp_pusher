@@ -1,0 +1,2051 @@
+<html>
+ <head>
+  <meta charset="UTF-8">
+  <title>RTMP协议详解：握手、消息格式与数据传输-CSDN博客</title>
+  <style>/* 基础样式 */ * { margin: 0; padding: 0; box-sizing: border-box; user-select: text !important; -webkit-user-select: text !important; } body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;   line-height: 1.8; color: #24292e; background: #fff; padding: 40px 20px; max-width: 900px; margin: 0 auto; font-size: 16px; } /* 标题样式 */ .article-title, h1:first-child { font-size: 32px; font-weight: 600; color: #1a1a1a; margin-bottom: 24px;   padding-bottom: 16px; border-bottom: 2px solid #eaecef; line-height: 1.4; } h1 { font-size: 28px; margin: 32px 0 16px; font-weight: 600; color: #1a1a1a; } h2 { font-size: 24px; margin: 28px 0 14px; font-weight: 600; color: #1a1a1a;   padding-bottom: 8px; border-bottom: 1px solid #eaecef; } h3 { font-size: 20px; margin: 24px 0 12px; font-weight: 600; color: #1a1a1a; } h4 { font-size: 18px; margin: 20px 0 10px; font-weight: 600; color: #1a1a1a; } /* 正文样式 */ p { margin: 16px 0; line-height: 1.8; color: #24292e; } ul, ol { margin: 16px 0; padding-left: 2em; line-height: 1.8; } li { margin: 8px 0; color: #24292e; } a { color: #0366d6; text-decoration: none; } a:hover { text-decoration: underline; } /* 代码块样式 */ pre { background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px;   padding: 16px; margin: 16px 0; overflow-x: auto; line-height: 1.5; font-size: 14px;   max-height: none !important; height: auto !important; } code { background: #f6f8fa; padding: 2px 6px; border-radius: 3px;   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 14px; color: #d73a49; } pre code { background: transparent; padding: 0; color: #24292e; display: block; } /* 引用块样式 */ blockquote { border-left: 4px solid #dfe2e5; background: #f6f8fa;   padding: 12px 16px; margin: 16px 0; border-radius: 0 4px 4px 0; color: #6a737d; } /* 图片样式 */ img { max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 4px; } /* 表格样式 */ table { border-collapse: collapse; width: 100%; margin: 16px 0; } table th, table td { border: 1px solid #dfe2e5; padding: 10px 14px; text-align: left; } table th { background: #f6f8fa; font-weight: 600; } table tr:nth-child(even) { background: #fafbfc; } /* MathJax 数学公式 */ .MathJax, .MathJax_Display { display: inline-block !important; visibility: visible !important; } .MathJax_Display { display: block !important; text-align: center !important; margin: 1em 0 !important; } .MathJax_Preview { display: none !important; } /* 隐藏所有多余元素 */ .code-expand-icon, .code-fold-btn, .hljs-button, .copy-code-btn, button, .btn, .toolbar, .tool-box, aside, .mask, .dialog, .modal { display: none !important; }</style>
+ </head>
+ <body>
+  <h1 class="article-title">RTMP协议详解</h1>
+  <div id="content_views" class="htmledit_views atom-one-dark">
+   <p id="main-toc"><strong>目录</strong></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t0" target="_self">一、协议概述</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t1" target="_self">二、握手（Handshake）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t2" target="_self">2.1 简单握手</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t3" target="_self">2.2 复杂握手</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t4" target="_self">三、RTMP消息格式（RTMP Message Formats）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t5" target="_self">3.1 Message介绍</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t6" target="_self">3.2 Chunk介绍</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t7" target="_self">四、RTMP消息类型（RTMP Message Type）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t8" target="_self">4.1&nbsp;协议控制消息（Protocol Control Messages）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t9" target="_self">4.2 命令消息（Command Message）&nbsp;</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t10" target="_self">4.3&nbsp;数据消息（Data Message）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t11" target="_self">​4.4 共享消息（Shared Object Message）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#id-8.%E9%9F%B3%E9%A2%91%E4%BF%A1%E6%81%AF%EF%BC%88AudioMessage%EF%BC%89" target="_self">4.5 音/视频信息（Audio/Video Message）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t12" target="_self">​4.6 聚合消息（Aggregate Message）</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t13" target="_self">4.7&nbsp;用户控制消息（User Control Message Event）</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t14" target="_self">五、数据传输过程</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t15" target="_self">5.1 发送/接收过程概述</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t16" target="_self">​5.2 Chunk传输过程示例</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t17" target="_self">5.3 RTMP推拉流过程</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t18" target="_self">六、知识点汇总</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t19" target="_self">七、RTMP使用场景及优缺点</a></p>
+   <p id="" style="margin: 0px 0px 2px; padding-left: 24px;"><a href="#t20" target="_self">八、QA</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t21" target="_self">1、rtmp为什么会低延时？</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t22" target="_self">2、为什么会有AMF0和AMF3？有什么区别？</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t23" target="_self">3、接收端如何知道哪些chunk属于同一个message？</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t24" target="_self">4、每个chunk的csid是否相同？</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t25" target="_self">5、chunk的哪些字段继承至message ？</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t26" target="_self">6、message拆分成chunk传输是防止低优先级的数据传输时间长阻塞优先级高的数据传输，哪些是高优先级数据，哪些是低优先级数据？</a></p>
+   <p id="" style="margin: 0px 0px 2px 48px; padding-left: 24px;"><a href="#t27" target="_self">7、rtmp和flv的关系？</a></p>
+   <p></p>
+   <h2 id="%E4%B8%80%E3%80%81%E5%8D%8F%E8%AE%AE%E6%A6%82%E8%BF%B0"><a name="t0"></a>一、<span class="words-blog hl-git-1" data-report-view="{&quot;spm&quot;:&quot;1001.2101.3001.10283&quot;,&quot;extra&quot;:&quot;{\&quot;words\&quot;:\&quot;协议\&quot;,\&quot;isNewGitCodeAB\&quot;:1}&quot;}" data-tit="协议" data-pretit="协议">协议</span>概述</h2>
+   <p>1、写在前面：学习的时候一定要对照官方文档、结合分析工具，才能深入理解。</p>
+   <p><span style="color:#494949;">（1）rtmp官方文档：</span><a href="https://rtmp.veriskope.com/pdf/rtmp_specification_1.0.pdf" title="https://rtmp.veriskope.com/pdf/rtmp_specification_1.0.pdf" rel="nofollow">https://rtmp.veriskope.com/pdf/rtmp_specification_1.0.pdf</a></p>
+   <p>（2）学习rtmp的时候可以配合抓包工具(wireshark)去分析，收发的消息类型及消息内容。</p>
+   <p>2、RTMP协议是Real Time Message Protocol（实时<span style="color: #3391E5" class="new-words-blog" data-href="https://download.csdn.net/download/qq_38830587/16773852?utm_source=kw_dl_0310" data-report-view="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://download.csdn.net/download/qq_38830587/16773852?utm_source=kw_dl_0310&quot;,&quot;extra&quot;:{&quot;wordId&quot;:9818,&quot;businessId&quot;:4,&quot;word&quot;:&quot;信息&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-click="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://download.csdn.net/download/qq_38830587/16773852?utm_source=kw_dl_0310&quot;,&quot;extra&quot;:{&quot;wordId&quot;:9818,&quot;businessId&quot;:4,&quot;word&quot;:&quot;信息&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-query="spm=1001.2101.3001.11407" data-tit="信息"> 信息 </span>传输协议）的缩写，它是由Adobe公司提出的一种<span style="color:#fe2c24;">应用层</span>的协议，用来解决多媒体<span style="color: #FC5531" class="new-words-blog" data-href="https://so.csdn.net/so/search?q=数据传输" data-report-view="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://so.csdn.net/so/search?q=数据传输&quot;,&quot;extra&quot;:{&quot;wordId&quot;:5292,&quot;businessId&quot;:1,&quot;word&quot;:&quot;数据传输&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-click="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://so.csdn.net/so/search?q=数据传输&quot;,&quot;extra&quot;:{&quot;wordId&quot;:5292,&quot;businessId&quot;:1,&quot;word&quot;:&quot;数据传输&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-query="spm=1001.2101.3001.11407" data-tit="数据传输"> 数据传输 <i style="background-image: url(https://i-operation.csdnimg.cn/images/e7c3df7a602f4267be505af7ecfc3f88.png);" alt="数据传输" class="words-blog-icon"></i> </span>流的多路复用（Multiplexing）和分包（packetizing）的问题。</p>
+   <p>3、RTMP协议有三个分支，第一种是工作在<span style="color: #FC5531" class="new-words-blog" data-href="https://so.csdn.net/so/search?q=tcp" data-report-view="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://so.csdn.net/so/search?q=tcp&quot;,&quot;extra&quot;:{&quot;wordId&quot;:4176,&quot;businessId&quot;:1,&quot;word&quot;:&quot;tcp&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-click="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://so.csdn.net/so/search?q=tcp&quot;,&quot;extra&quot;:{&quot;wordId&quot;:4176,&quot;businessId&quot;:1,&quot;word&quot;:&quot;tcp&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-query="spm=1001.2101.3001.11407" data-tit="TCP"> TCP <i style="background-image: url(https://i-operation.csdnimg.cn/images/e7c3df7a602f4267be505af7ecfc3f88.png);" alt="TCP" class="words-blog-icon"></i> </span>协议上的明文传输，它使用的端口是1935；第二种是RTMPT，RTMPT被封装在HTTP请求之中，可以穿越防火墙进行传输；第三种是RTMPS，它也是封装在HTTP之中，不过与RTMPT不同的是，它使用HTTPS安全连接，可以保证传输的安全。<span style="color:#fe2c24;">本文介绍的是第一种分支。</span></p>
+   <p>4、RTMP协议是要靠底层可靠的传输层协议（<span style="color:#fe2c24;">通常是TCP</span>）来保证信息传输的可靠性的，默认使用端口<span style="color:#fe2c24;">1935</span>。在基于传输层协议的链接建立完成后，RTMP协议也要<span class="words-blog hl-git-1" data-report-view="{&quot;spm&quot;:&quot;1001.2101.3001.10283&quot;,&quot;extra&quot;:&quot;{\&quot;words\&quot;:\&quot;客户端\&quot;,\&quot;isNewGitCodeAB\&quot;:1}&quot;}" data-tit="客户端" data-pretit="客户端">客户端</span>和服务器通过“握手”来建立基于传输层链接之上的RTMP Connection链接。RTMP Connection成功后会传输一些控制信息，如CreateStream命令会创建一个Stream链接，用于传输具体的音视频数据和控制这些信息传输的命令信息。</p>
+   <p>5、RTMP协议中基本的数据单元称为消息（Message），即封装、解封装都是以Message为单位进行操作。当RTMP协议在互联网中传输数据的时候，为了更好地实现多路复用、分包和信息的公平性，发送端会把Message划分为带有Message ID的Chunk，每个Chunk可能是一个单独的Message，也可能是Message的一部分，在接受端会根据chunk中包含的<span class="words-blog hl-git-1" data-report-view="{&quot;spm&quot;:&quot;1001.2101.3001.10283&quot;,&quot;extra&quot;:&quot;{\&quot;words\&quot;:\&quot;data\&quot;,\&quot;isNewGitCodeAB\&quot;:1}&quot;}" data-tit="data" data-pretit="data">data</span>的长度，message id和message的长度把chunk还原成完整的Message，从而实现信息的收发。</p>
+   <p>6、多路复用，RTMP可以将来自不同视频流的切片（chunk）在单个连接上传输，这种方法被称为“多路复用”</p>
+   <p></p>
+   <h2 id="%E4%BA%8C%E3%80%81%E6%8F%A1%E6%89%8B%EF%BC%88Handshake%EF%BC%89"><a name="t1"></a>二、握手（Handshake）</h2>
+   <p>1、一个 RTMP 连接以握手开始。先进行TCP握手后再进行RTMP握手。RTMP 握手由三个固定长度的块组成，有<span style="color:#fe2c24;">简单握手</span>和<span style="color:#fe2c24;">复杂握手</span>两种方式，<span style="color:#fe2c24;">两种握手方式信息流转的过程是相同的</span>，只是消息中携带的信息不同。</p>
+   <p style="margin-left:0cm;">2、握手实质上起到的是验证的作用，其中一项是会校验服务器，客户端的rtmp版本，如果版本兼容则可以收发数据，如果版本不兼容则说明不能收发数据，则握手会失败。</p>
+   <p style="margin-left:0cm;">3、rtmp握手成功之后才会有rtmp <span class="words-blog hl-git-1" data-tit="header" data-pretit="header">header</span>、rtmp body出现。握手的过程中不会有这些标识出现，因为此时rtmp还没有建立链接。握手的过程中的数据是纯数据，就是一个个字符，不属于rtmp header、rtmp body的范畴。</p>
+   <p style="margin-left:0cm;">如下图所示：在handshake中没有rtmp header、rtmp body，而在handshake后面的connect中就出现了rtmp header、rtmp body的标识。</p>
+   <p style="margin-left:0cm;"><img alt="" height="836" src="https://i-blog.csdnimg.cn/blog_migrate/859acf9b37d1004744e238de8cb4b18f.png" width="1200"></p>
+   <p><img alt="" height="750" src="https://i-blog.csdnimg.cn/blog_migrate/5947971ac5168e594fe700d22a928956.png" width="1200"></p>
+   <p>4、<span style="color:#494949;">无论推流（直播）还是拉流（观看），都是客户端向服务端发起握手请求。第一条握手消息是客户端发送的。</span></p>
+   <p><span style="color:#494949;">5、</span>客户端向<span class="words-blog hl-git-1" data-report-view="{&quot;spm&quot;:&quot;1001.2101.3001.10283&quot;,&quot;extra&quot;:&quot;{\&quot;words\&quot;:\&quot;服务端\&quot;,\&quot;isNewGitCodeAB\&quot;:1}&quot;}" data-tit="服务端" data-pretit="服务端">服务端</span>按序发送<span style="color: #3391E5" class="new-words-blog" data-href="https://download.csdn.net/download/sapq397592851/25918061?utm_source=kw_dl_0310" data-report-view="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://download.csdn.net/download/sapq397592851/25918061?utm_source=kw_dl_0310&quot;,&quot;extra&quot;:{&quot;wordId&quot;:37921,&quot;businessId&quot;:4,&quot;word&quot;:&quot;C0&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-click="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://download.csdn.net/download/sapq397592851/25918061?utm_source=kw_dl_0310&quot;,&quot;extra&quot;:{&quot;wordId&quot;:37921,&quot;businessId&quot;:4,&quot;word&quot;:&quot;C0&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-query="spm=1001.2101.3001.11407" data-tit="C0"> C0 </span>，C1，C2（按序）3个chunk，服务端向客户端按序发送S0，S1，S2（按序）3个chunk，然后才能进行有效信息的传输。RTMP协议并没有规定这6个Message的具体传输顺序，但需要保证以下几点：（简单握手和复杂握手均是如此）<br>
+     （1）客户端要等收到S1之后才能发送C2<br>
+     （2）客户端要等收到S2之后才能发送其他信息（控制信息和真实音视频等数据）<br>
+     （3）服务端要等到收到C0之后发送S1<br>
+     （4）服务端必须等到收到C1之后才能发送S2<br>
+     （5）服务端必须等到收到C2之后才能发送其他信息（控制信息和真实音视频等数据）<br>
+     如果每次发送一个握手chunk的话握手顺序会是这样：</p>
+   <p><img alt="" height="398" src="https://i-blog.csdnimg.cn/blog_migrate/333ef4f185a4c57e4dec254cfa8c6fe1.png" width="402"></p>
+   <p>理论上来讲只要满足以上条件，如何安排6个Message的顺序都是可以的，但实际实现中为了在保证握手的身份验证功能的基础上尽量减少通信的次数，一般的发送顺序是这样的，这一点可以通过wireshark抓ffmpeg推流包进行验证：（简单握手和复杂握手均是如此）<br>
+     ｜client｜Server ｜<br>
+     ｜－－－C0 + C1－－－&gt;&nbsp; |<br>
+     ｜&lt;－－S0 + S1 + S2－－｜<br>
+     ｜－－－－ C2 －－－－&gt;｜</p>
+   <p><img alt="" height="114" src="https://i-blog.csdnimg.cn/blog_migrate/8157e8d6fc6f339ea2ad1bf87d7686b8.png" width="1200"></p>
+   <p>6、简单握手中<span style="color:#fe2c24;">S2是C1的复制，C2是S1的复制。</span></p>
+   <h3 id="2.1%20%E7%AE%80%E5%8D%95%E6%8F%A1%E6%89%8B"><a name="t2"></a>2.1 简单握手</h3>
+   <p>1、C0和S0<br>
+     C0 和 S0 包都是一个单一的8位字节，以一个单独的8位整型域进行处理：</p>
+   <p><img alt="" height="202" src="https://i-blog.csdnimg.cn/blog_migrate/1535fa01c0a60fb97462996c41ab8d29.png" width="376"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:178px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">version</p></td>
+       <td style="text-align:center;width:178px;">8 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在 C0中，这一字段指示出客户端要求的 RTMP 版本号。在 S0 中，这一字段指示出服务端选择的 RTMP 版本号。版本号基本都是3。<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0、1、2 这三个值是由早期其他产品使用的，是废弃值。4 - 31 被保留为RTMP 协议的未来实现版本使用。<br>
+          32 - 255 不允许使用 (以区分开 RTMP 和其他常以一个可打印字符开始的文本协议)。<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#fe2c24;">无法识别客户端所请求版本号的服务器应该以版本 3 响应， (收到响应的) 客户端可以选择降低到版本 3，或者放弃握手。</span></p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>2 、C1和S1<br>
+     C1 和 S1 数据包的长度都是 1536 字节，分布如下：</p>
+   <p><img alt="" height="466" src="https://i-blog.csdnimg.cn/blog_migrate/36da9d3480ac50901a65f8a30bdd52d0.png" width="1144"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:178px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">time</td>
+       <td style="text-align:center;width:179px;">4 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段包含一个 timestamp，用于本终端发送的所有后续块的时间起点。这个值可以是 0。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">zero</td>
+       <td style="text-align:center;width:179px;">4 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段必须都是 0。<span style="color:#fe2c24;">如果不是0，代表要使用复杂握手。</span></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">random</td>
+       <td style="text-align:center;width:179px;">1528 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段可以包含任意值。终端需要区分出响应来自它发起的握手还是对端发起的握手，<span style="color:#fe2c24;">这个数据应该发送一些足够随机的数</span>。这个不需要对随机数进行加密保护，也不需要动态值。</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>3、C2和S2</p>
+   <p>C2 和 S2 数据包长度都是 1536 个节，基本就是 S1 和 C1 的副本。<span style="color:#fe2c24;">S2是C1的复制。 C2是S1的复制。</span>分布如下：</p>
+   <p><img alt="" height="462" src="https://i-blog.csdnimg.cn/blog_migrate/18193f9f54a0efd0b9ec4add8a36bb12.png" width="1116"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:178px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">time</td>
+       <td style="text-align:center;width:179px;">4 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段必须包含终端在 S1 (给 C2) 或者 C1 (给 S2) 发的timestamp。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">time2</td>
+       <td style="text-align:center;width:179px;">4 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段必须包含终端先前发出数据包 (s1 或者 c1) timestamp。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">random</td>
+       <td style="text-align:center;width:179px;">1528 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段必须包含终端发的 S1 (给 C2) 或者 S2 (给 C1)的随机数。</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <h3 id="2.2%E5%A4%8D%E6%9D%82%E6%8F%A1%E6%89%8B"><a name="t3"></a><strong>2.2 复杂握手</strong></h3>
+   <p>1、相对于简单握手，复杂握手主要是增加了更严格的验证。 主要是将简单握手中1528Bytes随机数的部分平均分成两部分， 一部分764Bytes<span style="color: #FC5531" class="new-words-blog" data-href="https://so.csdn.net/so/search?q=存储" data-report-view="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://so.csdn.net/so/search?q=存储&quot;,&quot;extra&quot;:{&quot;wordId&quot;:4743,&quot;businessId&quot;:1,&quot;word&quot;:&quot;存储&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-click="{&quot;spm&quot;:&quot;3001.11407&quot;,&quot;dest&quot;:&quot;https://so.csdn.net/so/search?q=存储&quot;,&quot;extra&quot;:{&quot;wordId&quot;:4743,&quot;businessId&quot;:1,&quot;word&quot;:&quot;存储&quot;,&quot;blogTemplateId&quot;:-1}}" data-report-query="spm=1001.2101.3001.11407" data-tit="存储"> 存储 <i style="background-image: url(https://i-operation.csdnimg.cn/images/e7c3df7a602f4267be505af7ecfc3f88.png);" alt="存储" class="words-blog-icon"></i> </span>public key(公共密钥，32字节)，另一部分 764Bytes存储digest(密文，32字节)。</p>
+   <p>2、另外， 复杂握手还有一个明显的特征就是:<span style="color:#fe2c24;"> C1、S1的version部分不为0， 服务端可根据这个来判断是否简单握手或复杂握手。</span></p>
+   <p><span style="color:#fe2c24;">3、C1/S1、C2/S2的计算过程比较复杂，可以参考本文档并结合srs相关代码进行学习</span></p>
+   <p>4、C0和S0<br>
+     C0 和 S0 包都是一个单一的8位字节，以一个单独的8位整型域进行处理：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:178px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">version</p></td>
+       <td style="text-align:center;width:178px;">8 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;说明是明文还是密文。如果使用的是明文（0X03），同时代表当前使用的rtmp协议的版本号。如果是密文，该位为0x06</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>5、C1和S1</p>
+   <p>（1）和简单握手相比，主要是将简单握手中random(1528Bytes)的部分平均分成两部分， 一部分764Bytes存储public key(公共密钥，32字节)，另一部分 764Bytes存储digest(密文，32字节)。以此来增加更加严格的验证。<span style="color:#fe2c24;">在不同的包里，key和diest顺序可能会颠倒，比如nginx-rtmp</span></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:178px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">time</p></td>
+       <td style="text-align:center;width:178px;">4 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;说明是明文还是密文。如果使用的是明文（0X03），同时代表当前使用的rtmp协议的版本号。如果是密文，该位为0x06</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">version</td>
+       <td style="text-align:center;width:178px;">4 bytes</td>
+       <td style="width:402px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;非0值，如果是0则表示简单握手。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">key</td>
+       <td style="text-align:center;width:178px;">764 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;random-data：长度由这个字段的最后4个byte决定，即761 - 764</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key-data：128个字节。Key字段对应C1和S1有不同的算法。发送端（C1）中的Key应该是随机的，接收端（S1）的key需要按照发送端的key去计算然后返回给发送端。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;random-data：（764 - offset - 128 - 4）个字节</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key_offset：4字节, 最后4字节定义了key的offset（相对于KeyBlock开头而言，相当于第一个random_data的长度）</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">digest</td>
+       <td style="text-align:center;width:178px;">764 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;offset：4字节,&nbsp;开头4字节定义了digest的offset</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;random-data：长度由这个字段起始的4个byte决定</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;digest-data：<strong>32个字节</strong></p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;random-data：（764 - 4 - offset - 32）个字节</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）C1、S1的key、digest的计算过程：<span style="color:#fe2c24;">key、digest构造好之后再发给对端</span></p>
+   <p>（<a href="https://blog.csdn.net/xinghongduo/article/details/51804430" title="rtmp复杂握手_施工中请绕行的博客-CSDN博客_rtmp复杂握手">rtmp复杂握手_施工中请绕行的博客-CSDN博客_rtmp复杂握手</a>、<a href="https://blog.csdn.net/qq_28309121/article/details/104647011" title="Rtmp协议复杂握手（handshake）详解_Fuction.的博客-CSDN博客_rtmp 复杂握手">Rtmp协议复杂握手（handshake）详解_Fuction.的博客-CSDN博客_rtmp 复杂握手</a>、<a href="https://blog.csdn.net/win_lin/article/details/13006803" title="rtmp complex handshake，变更的握手，支持h264/aac_win_lin的博客-CSDN博客">rtmp complex handshake，变更的握手，支持h264/aac_win_lin的博客-CSDN博客</a>）</p>
+   <p>C1的key为128bytes随机数。</p>
+   <p>C1的digest由HmacSHA256(FPKey, 30, P1+P2)计算出，其中P1为key+digest中digest-data(注意是digest-data，不是digest)之前的部分，P2为key+digest中digest-data之后的部分，P1+P2是将这两部分拷贝到新的数组，共(1536 - 32)长度，相当于把key+digest这部分的digest-data用剪子剪掉，剩余的部分再拼接起来。其中，FPkey是官方定义的公共密钥(从下面的注释中也可以看出FPkey的来源)：</p>
+   <pre data-index="0" class="new-version hljs" name="code"><code class="language-cpp hljs"><ol class="hljs-ln" style="width:100%"><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="1"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line"><span class="hljs-type">u_int8_t</span> FMSKey[] = {</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="2"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x47</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x6e</span>, <span class="hljs-number">0x75</span>, <span class="hljs-number">0x69</span>, <span class="hljs-number">0x6e</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x20</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="3"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x41</span>, <span class="hljs-number">0x64</span>, <span class="hljs-number">0x6f</span>, <span class="hljs-number">0x62</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x20</span>, <span class="hljs-number">0x46</span>, <span class="hljs-number">0x6c</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="4"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x61</span>, <span class="hljs-number">0x73</span>, <span class="hljs-number">0x68</span>, <span class="hljs-number">0x20</span>, <span class="hljs-number">0x4d</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x64</span>, <span class="hljs-number">0x69</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="5"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x61</span>, <span class="hljs-number">0x20</span>, <span class="hljs-number">0x53</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x72</span>, <span class="hljs-number">0x76</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x72</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="6"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x20</span>, <span class="hljs-number">0x30</span>, <span class="hljs-number">0x30</span>, <span class="hljs-number">0x31</span>, <span class="hljs-comment">// Genuine Adobe Flash Media Server 001</span></div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="7"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0xf0</span>, <span class="hljs-number">0xee</span>, <span class="hljs-number">0xc2</span>, <span class="hljs-number">0x4a</span>, <span class="hljs-number">0x80</span>, <span class="hljs-number">0x68</span>, <span class="hljs-number">0xbe</span>, <span class="hljs-number">0xe8</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="8"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x2e</span>, <span class="hljs-number">0x00</span>, <span class="hljs-number">0xd0</span>, <span class="hljs-number">0xd1</span>, <span class="hljs-number">0x02</span>, <span class="hljs-number">0x9e</span>, <span class="hljs-number">0x7e</span>, <span class="hljs-number">0x57</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="9"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x6e</span>, <span class="hljs-number">0xec</span>, <span class="hljs-number">0x5d</span>, <span class="hljs-number">0x2d</span>, <span class="hljs-number">0x29</span>, <span class="hljs-number">0x80</span>, <span class="hljs-number">0x6f</span>, <span class="hljs-number">0xab</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="10"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x93</span>, <span class="hljs-number">0xb8</span>, <span class="hljs-number">0xe6</span>, <span class="hljs-number">0x36</span>, <span class="hljs-number">0xcf</span>, <span class="hljs-number">0xeb</span>, <span class="hljs-number">0x31</span>, <span class="hljs-number">0xae</span></div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="11"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">}; <span class="hljs-comment">// 68</span></div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="12"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line"> </div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="13"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line"><span class="hljs-type">u_int8_t</span> FPKey[] = {</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="14"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x47</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x6E</span>, <span class="hljs-number">0x75</span>, <span class="hljs-number">0x69</span>, <span class="hljs-number">0x6E</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x20</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="15"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x41</span>, <span class="hljs-number">0x64</span>, <span class="hljs-number">0x6F</span>, <span class="hljs-number">0x62</span>, <span class="hljs-number">0x65</span>, <span class="hljs-number">0x20</span>, <span class="hljs-number">0x46</span>, <span class="hljs-number">0x6C</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="16"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x61</span>, <span class="hljs-number">0x73</span>, <span class="hljs-number">0x68</span>, <span class="hljs-number">0x20</span>, <span class="hljs-number">0x50</span>, <span class="hljs-number">0x6C</span>, <span class="hljs-number">0x61</span>, <span class="hljs-number">0x79</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="17"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x65</span>, <span class="hljs-number">0x72</span>, <span class="hljs-number">0x20</span>, <span class="hljs-number">0x30</span>, <span class="hljs-number">0x30</span>, <span class="hljs-number">0x31</span>, <span class="hljs-comment">// Genuine Adobe Flash Player 001</span></div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="18"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0xF0</span>, <span class="hljs-number">0xEE</span>, <span class="hljs-number">0xC2</span>, <span class="hljs-number">0x4A</span>, <span class="hljs-number">0x80</span>, <span class="hljs-number">0x68</span>, <span class="hljs-number">0xBE</span>, <span class="hljs-number">0xE8</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="19"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x2E</span>, <span class="hljs-number">0x00</span>, <span class="hljs-number">0xD0</span>, <span class="hljs-number">0xD1</span>, <span class="hljs-number">0x02</span>, <span class="hljs-number">0x9E</span>, <span class="hljs-number">0x7E</span>, <span class="hljs-number">0x57</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="20"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x6E</span>, <span class="hljs-number">0xEC</span>, <span class="hljs-number">0x5D</span>, <span class="hljs-number">0x2D</span>, <span class="hljs-number">0x29</span>, <span class="hljs-number">0x80</span>, <span class="hljs-number">0x6F</span>, <span class="hljs-number">0xAB</span>,</div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="21"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">    <span class="hljs-number">0x93</span>, <span class="hljs-number">0xB8</span>, <span class="hljs-number">0xE6</span>, <span class="hljs-number">0x36</span>, <span class="hljs-number">0xCF</span>, <span class="hljs-number">0xEB</span>, <span class="hljs-number">0x31</span>, <span class="hljs-number">0xAE</span></div></div></li><li><div class="hljs-ln-numbers"><div class="hljs-ln-line hljs-ln-n" data-line-number="22"></div></div><div class="hljs-ln-code"><div class="hljs-ln-line">}; <span class="hljs-comment">// 62</span></div></div></li></ol></code><div class="opt-box"><span class="code-language" data-language="cpp">cpp</span></div></pre>
+   <p>S1的key根据 C1的key算出来：OpenSSL中的一个加密算法传入C1的key秘钥从而得到共享秘钥，把这个共享秘钥作为S1的key秘钥。</p>
+   <p>S1的digest算法同C1。注意，必须先计算S1的key，因为key变化后digest也重新计算。</p>
+   <p>6、C2和S2</p>
+   <p>（1）C2、S2就是把digest放到最后那32字节上，主要是用来对C1、S1的验证。</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:178px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">time</p></td>
+       <td style="text-align:center;width:178px;">4 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段必须包含终端在 S1 (给 C2) 或者 C1 (给 S2) 发的timestamp。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">time2</td>
+       <td style="text-align:center;width:178px;">4 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个字段必须包含终端先前发出数据包 (s1 或者 c1) timestamp。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">random</td>
+       <td style="text-align:center;width:178px;">1504 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; random-data：1504字节</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">digest</td>
+       <td style="text-align:center;width:178px;">32 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;digest-data：32个字节</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）C2、S2digest算法如下：<span style="color:#fe2c24;">digest构造好之后再发给对端。</span>其中，FPKey、FMSKey可以参考上文内容。</p>
+   <p>// client generate C2, or server valid C2<br>
+     temp-key = HMACsha256(FPKey, 62, s1-digest)//是s1-digest，不是s1-digest-data<br>
+     c2-digest-data = HMACsha256(c2-random-data, temp-key, 32)</p>
+   <p>// server generate S2, or client valid S2<br>
+     temp-key = HMACsha256(FMSKey, 68, c1-digest)//是c1-digest，不是c1-digest-data<br>
+     s2-digest-data = HMACsha256(s2-random-data, temp-key, 32)</p>
+   <p id=""></p>
+   <h2 id="%E4%B8%89%E3%80%81RTMP%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F%EF%BC%88RTMP%20Message%20Formats%EF%BC%89"><a name="t4"></a>三、RTMP消息格式（RTMP Message Formats）</h2>
+   <h3 id="3.1%20Message%E4%BB%8B%E7%BB%8D"><a name="t5"></a>3.1 Message介绍</h3>
+   <p id="2.1%20Message%E6%A0%BC%E5%BC%8F">1、消息（Message）是RTMP协议中基本的数据单元。由Message Header和Message Payload（可以理解成message body）组成。</p>
+   <p style="margin-left:0cm;">2、对于音视频数据而言<span style="color:#fe2c24;">每一个message就是一帧数据。</span>对于flv的tag而言，就是对应rtmp每个message，一个tag就是一个message，是一一对应的关系；相当于每一个tag都封装成一个message。<span style="color:#fe2c24;">message payload的数据格式和tag data的数据格式是相同的，</span><span style="color:#494949;">message header和tag header的格式不同。</span></p>
+   <p style="margin-left:0cm;">3、Message Format如下：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Header</td>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">Length</p></td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;Message Payload（消息负载）的长度，不包含Message Header</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">Timestamp</p></td>
+       <td style="text-align:center;width:128px;">4 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; 时间戳（既是pts也是dts，因为直播场景中没有B帧，所以pts=dts）</p></td>
+      </tr>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Message Type Id</p></td>
+       <td style="text-align:center;width:128px;">1 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;消息类型，主要包括协议控制消息、音视频消息、命令消息等</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">Message Stream Id</p></td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:402px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;消息流ID可以是任意值。不同的message可以有相同的值。复用到同一块流上的不同消息流基于它们的消息流ID解复用。</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">—</td>
+       <td style="text-align:center;width:128px;">n bytes</td>
+       <td style="width:402px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;是消息中包含的实际数据，消息类型不同payload大小也不同。例如，它可以是一些音频样本或压缩视频数据或Metadata等</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>4、多路复用，RTMP可以将来自不同视频流的切片（chunk）在单个连接上传输，这种方法被称为“多路复用”，不同的流就用不同的Message Stream Id区分。</p>
+   <h3 id="3.2%20Chunk%E4%BB%8B%E7%BB%8D"><a name="t6"></a>3.2 Chunk介绍</h3>
+   <p>1、RTMP以Message为基本单位，通过把Message拆分成Chunk来进行网络发送。c<span style="color:#fe2c24;">hunk data默认是128字节</span>。chunk是RTMP最小的传输单元。<span style="color:#ff0000;">目的是：</span><span style="color:#494949;">防止一个大的数据包传输时间过长，阻塞其它数据包的传输。</span><span style="color:#fe2c24;">chunk合成message：</span><span style="color:#494949;">接收端将接收到chunk的</span>chunk data的大小加和，如果等于message payload（通过chunk-&gt;message header-&gt;message length获取）的则认为是同一个message。</p>
+   <p>2、<span style="color:#fe2c24;">Chunk在传输时：</span>同一个Message产生的多个Chunk只会串行发送。先发送的Chunk一定先到达。不同Message产生的Chunk可以并行发送。并行发送的Chunk复用了一条TCP链接。</p>
+   <p>3、Chunk Format如下：</p>
+   <p><img alt="" height="406" src="https://i-blog.csdnimg.cn/blog_migrate/18688756de66a9289efea26e040e6559.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="3" style="text-align:center;width:159px;">Chunk Header</td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Basic Header</p></td>
+       <td style="text-align:center;width:128px;">1-3 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;包含fmt(chunk type)和chunk stream id（csid），其中fmt决定了chunk的类型及message header的长度，占2 bit，而Basic header的长度取决于csid的数值大小，最少占1 byte。</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">Message Header</p></td>
+       <td style="text-align:center;width:128px;">0，3，7 or 11 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;要发送的实际信息（可能是完整的，也可能是一部分）的描述信息。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;长度取决于Basic Header中的chunk type，有Type 0，1，2，3类型的header</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">Extended Timestamp</p></td>
+       <td style="text-align:center;width:128px;"><span style="color:#fe2c24;">0 or 4 bytes</span></td>
+       <td style="width:402px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; 扩展时间戳（0 bytes时表示此字段不存在）</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Chunk Data</td>
+       <td style="text-align:center;width:159px;">—</td>
+       <td style="text-align:center;width:128px;">n bytes</td>
+       <td style="width:402px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;是消息中包含的实际数据，消息类型不同data大小也不同</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>4、有多种chunk type的<span style="color:#fe2c24;">目的是：</span>减少重复数据发送，提高chunk data的占比。</p>
+   <p id="3.2.1%20Basic%20Header"><strong>3.2.1 Basic Header</strong></p>
+   <p>1、Basic Header结构如下：&nbsp;</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="3" style="text-align:center;width:159px;">Basic Header</td>
+       <td style="width:159px;">
+        <p style="text-align:center;">fmt</p></td>
+       <td style="text-align:center;width:128px;">2 bits</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;表示chunk type，取值[0, 3]，即chunk共有4种类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">csid</p>
+        <p style="text-align:center;">(chunk stream id)</p></td>
+       <td style="text-align:center;width:128px;">6，14 or 22 bits</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;csid范围是3~65599，0~2为协议保留用作特殊信息；<span style="color:#fe2c24;"><code>通常控制流csid为2，命令流为3，开发中发现音视频流csid可自定义，如音频流4，视频流6。（</code></span><a href="https://www.jianshu.com/p/acf0d653f8b3" title="iOS音视频直播--RTMP协议解析 - 简书" rel="nofollow">iOS音视频直播--RTMP协议解析 - 简书</a><span style="color:#fe2c24;"><code>）</code></span></p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上文提到Basic Header大小为1-3 bytes，由于fmt域占2bits，所以CSID长度分别是6 bits、14 bits或22 bits</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（1）Basic Header为1bytes时：csid为6bits，取值在[3~63]</p>
+   <p><img alt="" height="190" src="https://i-blog.csdnimg.cn/blog_migrate/d38229b7600f9754ca40ab4ba56b87e6.png" width="340"></p>
+   <p>（2）Basic Header为2bytes时：第一个字节除了fmt外，其余6位表示数字0，csid范围是[64~319]，即最大为(2^8 - 1) + 64 = 319</p>
+   <p><img alt="" height="202" src="https://i-blog.csdnimg.cn/blog_migrate/b5d80057e063e9c44a273e3d24a19f72.png" width="515"></p>
+   <p>（3）Basic Header为3bytes时：第一个字节除了fmt外，其余6位表示数字1，csid范围是[64~65599]，最大值为 (2^16 - 1) + 64 = 65599</p>
+   <p><img alt="" height="248" src="https://i-blog.csdnimg.cn/blog_migrate/82cbfc3fd0678c5e6684b376954b4933.png" width="986"></p>
+   <p id="3.2.2%20Message%20Header"><strong>3.2.2 Message Header</strong></p>
+   <p>1、Message Header的格式和长度取决于Basic Header的chunk type，即fmt，fmt取值[0-3]，所以共有4种不同的chunk格式，<span style="color:#fe2c24;">目的是</span>减少重复数据发送，提高 chunk data的占比。同时也有4种不同的Message Header。</p>
+   <p>2、Message Header结构如下：&nbsp;</p>
+   <p>（1）chunk type = 0（fmt = 0）：Message Header共11字节，此类型必须在块流开始时使用，当流时间戳向后（例如，回退播放）时也要使用此格式。</p>
+   <p><img alt="" height="428" src="https://i-blog.csdnimg.cn/blog_migrate/555f8eb6c0020e9639015e37eaa82f31.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="5" style="text-align:center;width:159px;">Message Header</td>
+       <td style="text-align:center;width:159px;">timestamp</td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;时间戳，如果值大于等于16777215（0xFFFFFF），该字段必须等于16777215，然后转存到4字节的Extended Timstamp字段中。接收端判断是0xFFFFFF后会去Extended Timstamp解析时间戳</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">message length</td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;指的是message拆分之前message payload的长度（不包含header），而且如果被拆分成chunk，此字段填充拆分前message的body长度，而不是chunk的长度</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">message type id</td>
+       <td style="text-align:center;width:128px;">1 byte</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;消息类型，如8代表audio数据，9代表video，其它值可参考后文的消息类型</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">message stream id</td>
+       <td style="text-align:center;width:128px;">4 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;表示该Chunk所在的<span style="color:#fe2c24;">流的ID</span></p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="434" src="https://i-blog.csdnimg.cn/blog_migrate/d9cf861933c4bd18792f90a99e94eeb4.png" width="1200"></p>
+   <p>（抓包分析和官方文档描述有些不同，可能是抓包工具解析、显示的问题，不必纠结）</p>
+   <p>&nbsp;（2）chunk type = 1（fmt = 1）：Message Header共7字节，和前一个chunk共用message stream id（msid），因此省去了message stream id的4字节，表示此Chunk和上一次发的Chunk所在的<span style="color:#fe2c24;">流相同</span><span style="color:#494949;">（不是相同的message）</span>，如果在发送端和对端有一个流连接的时候尽量采用这种格式。</p>
+   <p><img alt="" height="362" src="https://i-blog.csdnimg.cn/blog_migrate/93182e3f9191d921d273a5e01eb08ad0.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Header</td>
+       <td style="text-align:center;width:159px;">timestamp delta</td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;和上一个chunk的时间差。如果值大于等于16777215（0xFFFFFF），该字段必须等于16777215，然后转存到4字节的Extended Timstamp字段中。接收端判断是0xFFFFFF后会去Extended Timstamp解析时间戳</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">message length</td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;指的是message拆分之前message payload的长度（不包含header），而且如果被拆分成chunk，此字段填充拆分前message的body长度，而不是chunk的长度</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">message type id</td>
+       <td style="text-align:center;width:128px;">1 byte</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;消息类型，如8代表audio数据，9代表video，其它值可参考后文的消息类型</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="436" src="https://i-blog.csdnimg.cn/blog_migrate/9042a70593fa63fe0246e024a46af27b.png" width="1200"></p>
+   <p>（抓包分析和官方文档描述有些不同，可能是抓包工具解析、显示的问题，不必纠结）</p>
+   <p>（3）chunk type = 2（fmt = 2）：Message Header共3字节，相对于 chunk type = 1 格式又省去了message length的3个字节和message type id的1个字节，表示此 chunk和上一次发送的 chunk 的message length、message type id都相同。余下的这三个字节表示 timestamp delta，使用同type=1。</p>
+   <p><img alt="" height="304" src="https://i-blog.csdnimg.cn/blog_migrate/cfd1af4f5a24e9abb0fa8d32b30ee392.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="3" style="text-align:center;width:159px;">Message Header</td>
+       <td style="text-align:center;width:159px;">timestamp delta</td>
+       <td style="text-align:center;width:128px;">3 bytes</td>
+       <td style="width:397px;">
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; 和上一个chunk的时间差。如果值大于等于16777215（0xFFFFFF），该字段必须等于16777215，然后转存到4字节的Extended Timstamp字段中。接收端判断是0xFFFFFF后会去Extended Timstamp解析时间戳</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="242" src="https://i-blog.csdnimg.cn/blog_migrate/24736b7a945dded8d444bd4548d887b4.png" width="1200">（抓包分析和官方文档描述有些不同，可能是抓包工具解析、显示的问题，不必纠结）</p>
+   <p>&nbsp;（4）chunk type = 3（fmt = 3）：Message Header共0字节，即此时chunk没有Message header。<br>
+     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当它在type = 0的chunk后面时，表示和前一个chunk的时间戳是相同的，也就是一个Message拆分成多个chunk时，后一个chunk和前一个chunk同属一个Message自然也就可以不用传Message header。<br>
+     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当它跟在type = 1或type = 2的chunk后面时，表示和前一个时间戳的差相同。如第一个chunk是type = 0，timestamp = 0，第二个chunk是type = 2，timestamp delta = 20，表示时间戳为0+20=20，第三个chunk是type = 3，则timestamp delta = 20，表示时间戳为20+20=40。</p>
+   <p><img alt="" height="222" src="https://i-blog.csdnimg.cn/blog_migrate/9e40540ec0ed2eb4fc3ba1893cb93d8f.png" width="1200">（抓包分析和官方文档描述有些不同，可能是抓包工具解析、显示的问题，不必纠结）</p>
+   <p><span style="color:#fe2c24;">3、chunk-&gt;message header 和 message-&gt;message header 的关系</span></p>
+   <p>（1）chunk type = 0（fmt = 0）时，如果没有chunk-&gt;extended timestamp则chunk-&gt;message header的内容和message-&gt;message header完全相同。如果存在chunk-&gt;extended timestamp则chunk-&gt;message header-&gt;timestamp和message-&gt;message header-&gt;timestamp的内容不相同，但是其余字段的内容是完全相同的。</p>
+   <p>（2）chunk type = 1（fmt = 1）时，chunk-&gt;message header除了timestamp delta的字段，其余字段内容都和message-&gt;message header相同。</p>
+   <p>（3）chunk type = 2（fmt = 2）时，chunk-&gt;message header没有字段和message-&gt;message header相同。</p>
+   <p>（4）chunk type = 3（fmt = 3）时，chunk-&gt;message header没有字段和message-&gt;message header相同。</p>
+   <p></p>
+   <h2 id="%E5%9B%9B%E3%80%81RTMP%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B%EF%BC%88RTMP%20Message%20Type%EF%BC%89"><a name="t7"></a>四、RTMP消息类型（RTMP Message Type）</h2>
+   <p>1、rtmp协议中有多种消息，用于数据传输和命令控制等操作，<span style="color:#fe2c24;">所有的消息都是封装成message，然后通过chunk来传输。</span></p>
+   <h3 id="4.1%C2%A0%E5%8D%8F%E8%AE%AE%E6%8E%A7%E5%88%B6%E6%B6%88%E6%81%AF%EF%BC%88Protocol%20Control%20Messages%EF%BC%89"><a name="t8"></a>4.1&nbsp;协议控制消息（Protocol Control Messages）</h3>
+   <p>1、在RTMP的chunk流会用一些特殊的值来代表协议的控制消息，<span style="color:#fe2c24;">属于RTMP chunk流协议层的消息</span>，它们的Message Stream ID必须为0（代表控制流信息），CSID必须为2，Message Type ID可以为1，2，3，5，6，具体代表的消息会在下面依次说明。控制消息的接受端会忽略掉chunk中的时间戳，收到后立即生效。（<a href="https://blog.csdn.net/shangmingyang/article/details/50837852?spm=1001.2101.3001.6650.2&amp;utm_medium=distribute.pc_relevant.none-task-blog-2~default~CTRLIST~Rate-2-50837852-blog-121260780.pc_relevant_3mothn_strategy_recovery&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-2~default~CTRLIST~Rate-2-50837852-blog-121260780.pc_relevant_3mothn_strategy_recovery&amp;utm_relevant_index=3" title="带你吃透RTMP_会敲代码的咩的博客-CSDN博客_带你吃透rtmp">带你吃透RTMP_会敲代码的咩的博客-CSDN博客_带你吃透rtmp</a>）</p>
+   <p id="4.1.1%C2%A0%E8%AE%BE%E7%BD%AE%E5%9D%97%E5%A4%A7%E5%B0%8F%EF%BC%88Set%20Chunk%20Size%20%EF%BC%8CMessage%20Type%20ID%20%3D%201%EF%BC%89"><strong>4.1.1&nbsp;设置块大小（Set Chunk Size ，Message Type ID = 1）</strong></p>
+   <p>1、RTMP消息需要以chunk size为单位封装成chunk包发送，因此接收端需要根据chunk size才能正确解包，所以双端都要记录对端的封包单位chunk size，<span style="color:#fe2c24;">默认128 bytes。</span><br>
+     2、通信过程中可发送此消息通知对端更新其记录的本端的chunk size。比如client想发送131 bytes的音频数据（此时chunk size为128 bytes，不更新chunk size的话需要拆成两个chunk），此时client可通知对端，这边client的chunk size更新为131 bytes，之后发送一个data为131 bytes的chunk即可，<span style="color:#fe2c24;">server端收到Set Chunk Size之后更新chunk size即可正确解析之后到来的chunk。</span><br>
+     3、<strong>双端的chunk size各自独立维护，可以不同。</strong>例如client可以发送131&nbsp;bytes的chunk，server也按照131&nbsp;bytes解析，server发送128 bytes的chunk，client也按照128 bytes解析。</p>
+   <p>4、message payload如下所示：</p>
+   <p><img alt="" height="362" src="https://i-blog.csdnimg.cn/blog_migrate/611b7b40ff7aa5500ba6e446d6450657.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:141px;">Type</td>
+       <td style="width:251px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="2" style="width:159px;">Message Payload</td>
+       <td style="width:159px;">
+        <p style="text-align:center;">第一个bit</p></td>
+       <td style="text-align:center;width:141px;">
+        <p style="text-align:center;">1 bit</p>
+        <p style="text-align:center;">（是bit不是byte）</p></td>
+       <td style="width:251px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;恒为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">chunk size</td>
+       <td style="text-align:center;width:141px;">31 bit</td>
+       <td style="width:251px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;可表示[1, 0x7FFFFFFF]区间，但是由于chunk size要小于Message的length，而Message length字段用3个字节存储，最大值为0xFFFFFF，所以实际可取值区间为[1, 0xFFFFFF]</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>Message Type ID 就是chunk中Type ID，也就是0x01<img alt="" height="320" src="https://i-blog.csdnimg.cn/blog_migrate/9cb8c57770d2c474d7cd278633e72d0f.png" width="912"></p>
+   <p id="4.1.2%20%E4%B8%AD%E6%96%AD%E6%B6%88%E6%81%AF%EF%BC%88Abort%20Message%EF%BC%8CMessage%20Type%20ID%20%3D%202%EF%BC%89"><strong>4.1.2 中断消息（Abort Message，Message Type ID = 2）</strong></p>
+   <p>1、发送数据过程中，发送端可发送Abort消息通知接收端丢弃当前未接收完的Message及忽略之后的消息。先前已收到的chunk将被全部被抛弃，接收端根据Abort消息中的chunk stream id（csid）可丢弃对应chunk流中之后的所有数据。比如在发送端需要关闭时，发送此消息通知对端之后的数据可以不用处理了。</p>
+   <p>2、message payload如下所示：</p>
+   <p><img alt="" height="290" src="https://i-blog.csdnimg.cn/blog_migrate/d66ee6819c24e938b46faec2c9243ad8.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="1" style="width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">chunk stream id</td>
+       <td style="text-align:center;width:128px;">32 bits</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 此字段保存要丢弃其当前消息的块流ID</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p id="4.1.3%20%E5%BA%94%E7%AD%94%E6%B6%88%E6%81%AF%EF%BC%88Acknowledgement%EF%BC%8CMessage%20Type%20ID%20%3D%203%EF%BC%89"><strong>4.1.3 应答消息（Acknowledgement，Message Type ID = 3）</strong></p>
+   <p>1、当收到对端消息字节数等于接收窗口大小时，接收端要回复一个应答消息（相当于ack）告知对端可以继续发送数据，<span style="color:#fe2c24;">发送方在收到应答消息之前不会再继续发送消息。</span></p>
+   <p>2、message payload如下所示：</p>
+   <p><img alt="" height="284" src="https://i-blog.csdnimg.cn/blog_migrate/7843b20b1436f95f23d19eba08a93f6c.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="1" style="width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">chunk stream id</td>
+       <td style="text-align:center;width:128px;">32 bits</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;截止目前接收到的数据总和，以字节为单位</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p id="4.1.4%20%E5%BA%94%E7%AD%94%E7%AA%97%E5%8F%A3%E5%A4%A7%E5%B0%8F%EF%BC%88Window%20Acknowledgement%20Size%EF%BC%8CMessage%20Type%20ID%20%3D%205%EF%BC%89"><strong>4.1.4 应答窗口大小（Window Acknowledgement Size，Message Type ID = 5）</strong></p>
+   <p>1、规定接收端接收多少数据后需要发送一个应答消息。发送端可以发送此消息通知对端更新窗口大小，一般在音视频数据之前发送。并且<strong>双端的window size共同维护，保持相同</strong>。</p>
+   <p>2、message payload如下所示：</p>
+   <p><img alt="" height="332" src="https://i-blog.csdnimg.cn/blog_migrate/8f4f64749bac2a2de5ede78a66e19c44.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="1" style="width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">acknowledgement window size</td>
+       <td style="text-align:center;width:128px;">32 bits</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;接收端接收多少数据后需要发送一个应答消息</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>Message Type ID 就是chunk中Type ID，也就是0x05</p>
+   <p><img alt="" height="376" src="https://i-blog.csdnimg.cn/blog_migrate/9d2781d868c54610bb3971ac81562714.png" width="838"></p>
+   <p id="4.1.5%20%E8%AE%BE%E7%BD%AE%E6%B5%81%E5%B8%A6%E5%AE%BD%EF%BC%88Set%20Peer%20Bandwidth%EF%BC%8CMessage%20Type%20ID%20%3D%206%EF%BC%89"><strong>4.1.5 设置流带宽（Set Peer Bandwidth，Message Type ID = 6）</strong></p>
+   <p>1、客户端或服务器发送此消息以限制其对等端的输出带宽。</p>
+   <p>2、message payload如下所示：</p>
+   <p><img alt="" height="362" src="https://i-blog.csdnimg.cn/blog_migrate/d512dd3ebf47ea35b803970f42543019.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="2" style="width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">acknowledgement window size</td>
+       <td style="text-align:center;width:128px;">32 bits</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; 设置对端出口带宽</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">limit type</td>
+       <td style="text-align:center;width:128px;">8 bits</td>
+       <td style="width:397px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;limit type = 0：硬限制，立即更新出口带宽大小</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;limit type = 1：软限制，可以更新出口带宽大小，也可以保留原值，但是原值一定要小于期望更新的大小</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;limit type = 2：动态限制，如果上一次为硬限制，此消息被视为硬限制，否则忽略此消息</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>Message Type ID 就是chunk中Type ID，也就是0x06<img alt="" height="358" src="https://i-blog.csdnimg.cn/blog_migrate/3b5be885fd224a3dea91e3447e8ca134.png" width="1058"></p>
+   <h3 id="4.2%20%E5%91%BD%E4%BB%A4%E6%B6%88%E6%81%AF%EF%BC%88Command%20Message%EF%BC%89%C2%A0"><a name="t9"></a>4.2 命令消息（Command Message）&nbsp;</h3>
+   <p>（<a href="https://zhuanlan.zhihu.com/p/196743129" title="流媒体：RTMP 命令消息与流管理 - 知乎" rel="nofollow">流媒体：RTMP 命令消息与流管理 - 知乎</a>）</p>
+   <p>1、命令消息（Command Messages）是用于 C-S 进行直接交互应答的一类消息。一般情况下，命令消息的发送对端，<span style="color:#fe2c24;">是需要对端进行应答信号反馈的。</span>需要AMF编码，AMF0编码时Message Type ID = 20，使用AMF3编码时Message Type ID = 17，<span style="color:#0d0016;">CSID通常为3。</span></p>
+   <p>2、命令类型的消息包含命令名称、事务ID和相关参数。如client端发送connect命令时需要包含要连接的应用名称作为参数，然后server端回复消息时带上收到的transaction ID表示对此条消息的回应。回复命令有_result，_error，或者其他如verifyClient，contactExternalServer的方法名。</p>
+   <p>3、发送命令消息的对象有两种分别是NetConnection和NetStream：NetConnection：表示双端的上层连接，服务器和客户端之间进行<span style="color:#fe2c24;">网络连接</span>的一种高级表示形式。NetStream：表示流信息的传输通道如音频流、视频流，以及控制流信息的状态，如Play播放流，Pause暂停。</p>
+   <p id="2.3.1%C2%A0%E7%BD%91%E7%BB%9C%E8%BF%9E%E6%8E%A5%E5%91%BD%E4%BB%A4%EF%BC%88NetConnection%20Commands%EF%BC%89"><strong>4.2.1&nbsp;网络连接命令（NetConnection Commands）</strong></p>
+   <p>1、表示双端的上层连接，服务器和客户端之间进行<span style="color:#fe2c24;">网络连接</span>的一种高级表示形式。</p>
+   <p>2、网络连接允许使用：连接（connect）、调用（call）、创建流（createStream），每一种消息都有应答消息。</p>
+   <p>3、应答消息中的<span style="color:#fe2c24;">“Transaction ID”</span>表明对哪个请求的应答。</p>
+   <p><strong>4.2.1.1 连接（connect）</strong></p>
+   <p>1、客户端向服务器发送connect命令，以请求连接到服务器<span style="color:#fe2c24;">应用程序实例（Application Instance）。</span>不同的的Application Instance可根据功能进行区分，比如直播可以用live表示，点播可以用vod表示，测试环境可以用test表示，用户可自定义。例如：rtmp://192.127.0.1/test/16，可以表示test环境，16是对流的描述，用户可自定义。<span style="color:#fe2c24;">ip后面的内容可以用来标识流的内容</span>&nbsp;</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; ”connect”</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;恒为1</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;键值对集合表示的命令参数（具体内容可参考官方文档）</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Optional User Arguments（额外的用户参数)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;用户自定义的额外信息</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>Optional User Arguments（额外的用户参数) 包含如下内容：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Property&nbsp;</p></td>
+       <td style="text-align:center;">Type</td>
+       <td style="text-align:center;width:283px;">Description</td>
+       <td style="text-align:center;width:302px;">Example Value</td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">app</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端要连接的服务器应用程序名</p></td>
+       <td style="width:302px;">
+        <p>testapp</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">flashver</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Flash Player的版本号。它与ApplicationScript中getversion()方法返回的字符串是一样的。</p></td>
+       <td style="width:302px;">
+        <p>FMSc/1.0</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">swfUrl</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;发起连接的SWF源文件的URL</p></td>
+       <td style="width:302px;">
+        <p>file://C:/FlvPlayer.swf</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">tcUrl</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器URL。格式：protocol://servername:port/appName</p>
+        <p>/appInstance</p></td>
+       <td style="width:302px;">
+        <p>rtmp://localhost:1935/testapp/instance1</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">fpad</p></td>
+       <td>
+        <p style="text-align:center;">Boolean</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果使用代理，值为true</p></td>
+       <td style="width:302px;">
+        <p>true或false</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">audioCodecs</p></td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;指示客户端支持的音频编码</p></td>
+       <td style="width:302px;">
+        <p>SUPPORT_SND_MP3</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">videoCodecs</p></td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;指示客户端支持的视频编码</p></td>
+       <td style="width:302px;">
+        <p>SUPPORT_VID_SORENSON</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">videoFunction</p></td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;指示客户端支持的专用的视频方法</p></td>
+       <td style="width:302px;">
+        <p>SUPPORT_VID_CLIENT_SEEK</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">pageUrl</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SWF文件从哪里加载的网页URL</p></td>
+       <td style="width:302px;">
+        <p>http://somehost/sqmple.html</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">objectEncoding</p></td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td style="width:283px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AMF编码方法</p></td>
+       <td style="width:302px;">
+        <p>AMF3</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>audioCodecs包含如下内容：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Codec Flag</p></td>
+       <td style="text-align:center;width:345px;">Usage</td>
+       <td style="text-align:center;width:123px;">Value</td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_NONE</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;原始音频，无压缩</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0001</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_ADPCM</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ADPCM压缩</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0002</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_MP3</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mp3压缩</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0004</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_INTEL</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;未使用</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0008</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_UNUSED</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;未使用</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0010</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_NELLY8</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8-kHz采样速率的NellyMoser压缩</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0020</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_NELLY</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NellyMoser压缩（5，11，22，和44 kHz采样速率）</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0040</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_G711A</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;G711A声音压缩（仅Flash Media Server支持）</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0080</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_G711U</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;G711U声音压缩（仅Flash Media Server支持）</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0100</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_NELLY16</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;16-kHz采样速率的NellyMoser压缩</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0200</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_AAC</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;高级音频编码（AAC）编解码</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0400</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_SPEEX</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Speex音频</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0800</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_SND_ALL</p></td>
+       <td style="width:345px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;所有RTMP支持的音频编解码</p></td>
+       <td style="width:123px;">
+        <p style="text-align:center;">0x0FFF</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>videoCodecs包含如下内容：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Codec Flag</p></td>
+       <td style="text-align:center;width:345px;">Usage</td>
+       <td style="text-align:center;width:123px;">Value</td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_UNUSED</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;废弃值</p></td>
+       <td>
+        <p style="text-align:center;">0x0001</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_JPEG</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;废弃值</p></td>
+       <td>
+        <p style="text-align:center;">0x0002</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_SORENSON</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sorenson Flash视频</p></td>
+       <td>
+        <p style="text-align:center;">0x0004</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_HOMEBREW</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;V1屏幕共享</p></td>
+       <td>
+        <p style="text-align:center;">0x0008</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_VP6 (On2)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;On2视频（Flash 8+）</p></td>
+       <td>
+        <p style="text-align:center;">0x0010</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_VP6ALPHA(On2 with alphachannel)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;带有alpha通道的On2视频</p></td>
+       <td>
+        <p style="text-align:center;">0x0020</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_HOMEBREWV(screensharing v2)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;屏幕共享版本2（Flash 8+）</p></td>
+       <td>
+        <p style="text-align:center;">0x0040</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_H264</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;H264视频</p></td>
+       <td>
+        <p style="text-align:center;">0x0080</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SUPPORT_VID_ALL</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;所有的RTMP支持的视频编解码</p></td>
+       <td>
+        <p style="text-align:center;">0x00FF</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>videoFunction包含如下内容：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        <p style="text-align:center;">Codec Flag</p></td>
+       <td style="text-align:center;width:345px;">Usage</td>
+       <td style="text-align:center;width:123px;">Value</td>
+      </tr>
+      <tr>
+       <td>
+        <p>SUPPORT_VID_CLIENT_SEEK</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;指示客户端可以进行帧精确控制查找</p></td>
+       <td>
+        <p style="text-align:center;">0x0001</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>推流地址：rtmp:/ip:port/study_rtmp/gogogo</p>
+   <p><img alt="" height="650" src="https://i-blog.csdnimg.cn/blog_migrate/9ce4e6efeea0c3be7f4e019944486290.png" width="1200">&nbsp;（2）应答消息：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; ”_result”或"_err"，表示响应是否为结果或者错误</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;恒为1</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Properties(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;键值对集合表示的命令参数（具体内容可参考官方文档）</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Information（应答信息)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;描述应答的名称-值对，如“code”，“level”，“description”之类的内容</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="864" src="https://i-blog.csdnimg.cn/blog_migrate/06108f07f13c67f9d05bafa14842c91f.png" width="1200"></p>
+   <p>&nbsp;<strong>&nbsp;4.2.1.2 调用（call）</strong></p>
+   <p>1、NetConnection对象的调用方法在接收端运行远程过程调用（RPC）。被调用的RPC名称作为参数传递给调用命令。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Procedure Name(程序名称)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 指定调用对端的远程功能名称</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 事物ID，用来标记请求，如不需要也可以传0</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;键值对集合表示的命令参数（具体内容可参考官方文档）</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Optional User Arguments（额外的用户参数)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;用户自定义的额外信息</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）应答消息</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; RPC请求方定义的回应方法的名称</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 需要响应的RPC请求的事务ID，标识它属于哪个应答的</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; RPC需求的配置参数</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Response（应答信息)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;被调用的RPC的返回结果</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><strong>4.2.1.3 创建流（createStream</strong><strong>）</strong></p>
+   <p>1、客户端将此命令发送到服务器，以创建消息通信的逻辑通道。音频、视频和元数据的发布通过使用createStream命令创建的流通道执行。NetConnection是默认的通信信道，其流ID为0。协议和一些命令消息（包括createStream）使用默认的通信通道。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Command Name(程序名称)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; “createstream”</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 命令会话ID</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果存在任何命令信息，则设置此对象，否则设置为空类型。</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="392" src="https://i-blog.csdnimg.cn/blog_migrate/6ecbbfcc959a4012b53cce667fedd14f.png" width="1036"></p>
+   <p>&nbsp;&nbsp;（2）应答消息</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; ”_result”或"_err"，表示响应是否为结果或者错误</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 标识它属于哪个应答的</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;如果存在任何命令信息，则设置此对象，否则设置为空类型。</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Stream ID（应答信息)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;stream id或错误信息</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p id="%E2%80%8B%E7%BC%96%E8%BE%91"><img alt="" height="434" src="https://i-blog.csdnimg.cn/blog_migrate/025f093d55120380bc69e121bf655957.png" width="974">4<strong>.2.2&nbsp;网络流命令（NetStream）</strong></p>
+   <p>1、网络流命令是在数据信道建立完毕后<span style="color:#fe2c24;">（先有NetConnection，才有NetStream命令）</span>，用来对音视频数据流进行直接控制的命令类型。这些命令作用于当前信道对应数据的操控行为，<span style="color:#fe2c24;">都是客户端向服务端发送的命令</span>，一个NetConnection对象可以有多个NetStream，进而支持多种数据。常见的命令如下：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">命令</p></td>
+       <td style="text-align:center;width:128px;">作用</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">
+        <p style="text-align:center;">play</p></td>
+       <td style="text-align:center;width:128px;">播放</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">play2</td>
+       <td style="text-align:center;width:128px;">播放2</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">deleteStream</td>
+       <td style="text-align:center;width:128px;">删除流</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">closeStream</td>
+       <td style="text-align:center;width:128px;">关闭流</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">receiveAudio</td>
+       <td style="text-align:center;width:128px;">接收音频</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">receiveVideo</td>
+       <td style="text-align:center;width:128px;">接收视频</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">publish</td>
+       <td style="text-align:center;width:128px;">推流</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">seek</td>
+       <td style="text-align:center;width:128px;">定位</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">pause</td>
+       <td style="text-align:center;width:128px;">暂停</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>2、网络流命令的请求命令所对应的应答命令，被统一命名为 “onStatus” 以描述数据所处的状态发生变更，因此<span style="color:#fe2c24;">具有统一的格式</span>（<span style="color:#fe2c24;">注意</span>：不是所有的消息都有应答，而是有应答消息的都是如下格式）</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;"></td>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td colspan="1" rowspan="4" style="text-align:center;width:159px;">Message Payload</td>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td style="text-align:center;width:128px;">String</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;onStatus</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td style="text-align:center;width:128px;">Number</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; 恒为0</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp; NULL</td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Info Object（应答信息)&nbsp;</td>
+       <td style="text-align:center;width:128px;">Object</td>
+       <td style="width:397px;">&nbsp; &nbsp; &nbsp; &nbsp;stream id或错误信息</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>因此，我们通过处理 NetStream 的应答指令的 ‘level’ 和 ’code’ 字段，就可以知道相应的请求指令是否有成功执行了。进而判断当前状态，并确认是否需要执行后续的操作流程。</p>
+   <p><strong>4.2.2.1&nbsp;播放（play</strong><strong>）</strong></p>
+   <p>1、客户端发送此命令让服务器播放流。也可以多次使用此命令创建一个播放列表。如果你想创建一个在不同直播或录制流之间切换的动态播放列表，多次调用play并将reset字段设置为false。相反，如果你想立即播放指定的流，将reset字段设置为true。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “play”</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Stream Name(流名称)</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;待播放流的名称和格式。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果要播放视频（FLV）文件，指定不带文件扩展名（比如，“sample”）的流名称。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果要播放H.264/AAC文件，你必须在流名称前加上mp4:的前缀，并且指定文件名<span style="color:#fe2c24;">后缀</span>。比如，要播放文件sample.m4v，指定“mp4:sample.m4v”</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果要回放MP3或者ID3标签，你必须要在流名称前加上mp3:的前缀。比如，“mp3:sample”</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Start(开始时间)</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个可选的参数，指定开始播放的起开时间，单位是秒，默认值是-2。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start = -2，代表选取对应该流名称的直播流，即当前正在推送的流开始播放，如果对应该名称的直播流不存在，就选取该名称的流的录播版本，如果这也没有，<strong>当前播流端要等待直到对端开始该名称的流的直播。</strong></p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start =&nbsp;-1，那么只会选取直播流进行播放，即使有录播流也不会播放；如果传值或者正数，就代表从该流的该时间点开始播放，<strong>如果流不存在的话就会自动播放播放列表中的下一个流</strong></p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Duration &gt;= 0，一个在流名称字段指定的录播流会被播放，起始时间是Start字段指定的时间。如果找不到该记录流，<strong>播放列表的下一个条目会被播放。</strong></p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Duration(时长)</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一个可选的参数，指定回放时长，单位是秒，默认值是-1。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Duration = -1，直播流被播放直到它不可用，或者录播流被播放直到结束。（如果你传递一个不同于-1的负数，它会把该值解析为-1）</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Duration =&nbsp;0，它会播放<span style="color:#fe2c24;">录播流</span>中Start字段指定开始时间的一帧。</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Duration &gt;&nbsp;0，如果你指定一个正数，它会播放Duration字段指定该段时间的直播流。之后，它能够播放Duration字段指定该段时间的录播流。（如果流在Duration字段指定的时间前结束，回放随着流的结束而结束）</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Reset(重置)</p></td>
+       <td>
+        <p style="text-align:center;">Boolean</p></td>
+       <td>
+        <p>一个可选的布尔值，它指定是否清除之前的所有播放列表</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="464" src="https://i-blog.csdnimg.cn/blog_migrate/1521ffab2f9e0a43ed109161de124900.png" width="1200"></p>
+   <p><strong>4.2.2.2&nbsp;播放2（play2</strong><strong>）</strong></p>
+   <p>1、play命令不同的是，play2命令可以将当前正在播放的流切换到同样数据但不同码率的流上，服务端会维护多种比特率的文件来供客户端使用play2命令来切换。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “play2”</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">Parameters(参数)</td>
+       <td style="text-align:center;">Object</td>
+       <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AMF编码的Flash对象，包括了一些用于描述flash.net.NetstreamPlayOptions ActionScript obejct的参数</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><strong>4.2.2.3&nbsp;删除流（deleteStream）</strong></p>
+   <p>1、NetStream在NetStream对象被销毁时发送deleteStream命令，用于客户端告知服务端本地的某个流对象已被删除，不需要再传输此路流。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “deleteStream”</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">Stream ID（流ID)</td>
+       <td style="text-align:center;">Number</td>
+       <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;本地已删除，不再需要服务器传输的流的ID</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p><img alt="" height="436" src="https://i-blog.csdnimg.cn/blog_migrate/9f567086d58e33cdea89666001d6cebf.png" width="1072">&nbsp;（2）应答消息（应答格式参考“4.2.2&nbsp;网络流命令（NetStream）--&gt; 2”）：&nbsp;</p>
+   <p>无应答消息</p>
+   <p><strong>4.2.2.4&nbsp;接收音频（receiveAudio）</strong></p>
+   <p>1、客户端通知服务端是否要发送音频。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “deleteStream”</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">Bool Flag(标识)</td>
+       <td style="text-align:center;">Boolean</td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bool Flag =&nbsp;true，表示发送音频，服务端就会准备接受音频数据，会向客户端回复NetStream.Seek.Notify和NetStream.Play.Start的Onstatus命令告知客户端当前流的状态</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bool Flag = false，服务端不做响应</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）应答消息（应答格式参考“4.2.2&nbsp;网络流命令（NetStream）--&gt; 2”）：</p>
+   <p>如果，Bool Flag = false 这个消息只用来通知服务器，没有统一应答返回。<br>
+     如果，Bool Flag = true则应答消息’code’为 NetStream.Seek.Notify 或 NetStream.Play.Start</p>
+   <p><strong>4.2.2.5&nbsp;接收视频（receiveVideo）</strong></p>
+   <p>1、客户端通知服务端是否要发送视频。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “deleteStream”</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;">Bool Flag(标识)</td>
+       <td style="text-align:center;">Boolean</td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bool Flag = true，表示发送音频，服务端就会准备接受音频数据，会向客户端回复NetStream.Seek.Notify和NetStream.Play.Start的Onstatus命令告知客户端当前流的状态</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bool Flag = false，服务端不做响应</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）应答消息（应答格式参考“4.2.2&nbsp;网络流命令（NetStream）--&gt; 2”）：</p>
+   <p>如果，Bool Flag = false 这个消息只用来通知服务器，没有统一应答返回。<br>
+     如果，Bool Flag = true则应答消息’code’为 NetStream.Seek.Notify 或 NetStream.Play.Start</p>
+   <p><strong>4.2.2.6&nbsp;发布（publish）</strong></p>
+   <p>1、客户端发送此消息，将命名流发布到服务器。其他客户端可以使用此流名来播放流，接收发布的音频，视频，以及其它数据消息。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “publish“</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">PublishingName(发布的流名称)</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;发布流的名称</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">PublishingType(发布类型)</p></td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;有三种发布的类型：live record 或 append</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PublishingType = record : 该流已被发布并且数据被记录到一个新的文件。该文件存储在服务器的一个包含服务器应用程序目录的子目录。如果文件已经存在，则它被覆盖</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PublishingType = append：流已经被发布，并且该数据被追加到一个文件。如果找不到文件，则创建它</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PublishingType = live：直播数据被发布，而没有记录到文件</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>推流地址：rtmp:/ip:port/study_rtmp/gogogo</p>
+   <p><img alt="" height="482" src="https://i-blog.csdnimg.cn/blog_migrate/504bbec5941d3ea1c03e331bfcce5898.png" width="1128"></p>
+   <p>（2）应答消息（应答格式参考“4.2.2&nbsp;网络流命令（NetStream）--&gt; 2”）：&nbsp;</p>
+   <p>publish 的返回状态 NetStream.Publish.Start，这个消息不止由 onStatus 统一应答携带，也会由 onFCPublish 返回。</p>
+   <p><img alt="" height="666" src="https://i-blog.csdnimg.cn/blog_migrate/dc9c00abab0d57bc80c2d6d1d09b7dd4.png" width="1200"></p>
+   <p><strong>4.2.2.7 定位（seek）</strong></p>
+   <p>1、定位到视频或音频的某个位置，以毫秒为单位。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “seek“</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">milliSeconds(毫秒)</td>
+       <td style="text-align:center;">Number</td>
+       <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;定位到该文件的xx毫秒处</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）应答消息（应答格式参考“4.2.2&nbsp;网络流命令（NetStream）--&gt; 2”）：</p>
+   <p>当定位成功，服务器发送NetStream.Seek.Notify的状态消息。失败的时候，它返回一个_error的消息</p>
+   <p><strong>4.2.2.8</strong> <strong>暂停（pause）</strong></p>
+   <p>1、客户端发送pause命令以告诉服务器暂停或者开始播放。</p>
+   <p>2、消息的结构如下所示：</p>
+   <p>（1）请求消息（客户端发送给服务器）：</p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="width:159px;">
+        <p style="text-align:center;">Field</p></td>
+       <td style="text-align:center;width:128px;">Type</td>
+       <td style="width:402px;">
+        <p style="text-align:center;">Comment</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Name(命令名字)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">String</p></td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; “pause“</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Transaction ID(事务ID)</td>
+       <td>
+        <p style="text-align:center;">Number</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Transaction ID设置为0</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Command Object(命令包含的参数对象)&nbsp;</td>
+       <td>
+        <p style="text-align:center;">Null</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不存在命令信息，设置为null类型</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">Pause/Unpause Flag(暂停/恢复播放)</td>
+       <td style="text-align:center;">Boolean</td>
+       <td>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; true，暂停</p>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; false，恢复播放</p></td>
+      </tr>
+      <tr>
+       <td style="text-align:center;width:159px;">milliSeconds(毫秒)</td>
+       <td style="text-align:center;">Number</td>
+       <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;定位到该文件的xx毫秒处</td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>（2）应答消息</p>
+   <p>pause 成功后，会有 ’code’ 为 NetStream.Pause.Notify 消息返回。<br>
+     unpause 成功后，会有 ’code’ 为 NetStream.Unpause.Notify 消息返回。</p>
+   <h3 id="2.3%C2%A0%E6%95%B0%E6%8D%AE%E6%B6%88%E6%81%AF%EF%BC%88Data%20Message%EF%BC%89"><a name="t10"></a>4.3&nbsp;数据消息（Data Message）</h3>
+   <p>1、传递一些元数据（MetaData，比如视频名，分辨率等等）或者用户自定义的一些消息。当信息使用AMF0编码时，Message Type ID＝18，AMF3编码时Message Type ID＝15。</p>
+   <h3 id="%E2%80%8B%E7%BC%96%E8%BE%91%C2%A04.4%20%E5%85%B1%E4%BA%AB%E6%B6%88%E6%81%AF%EF%BC%88Shared%20Object%20Message%EF%BC%89"><a name="t11"></a><img alt="" height="1078" src="https://i-blog.csdnimg.cn/blog_migrate/09a9cbc91e629571e69f08d4c6a75902.png" width="1200"><strong>4.4 共享消息（Shared Object Message）</strong></h3>
+   <p>1、共享对象是在多个客户端、实例等之间同步的Flash对象，Flash对象是由键值对组成的集合。每条消息可以包含多个事件。当信息使用AMF0编码时，Message Type ID＝19，AMF3编码时Message Type ID＝16。</p>
+   <p>2、消息结构如下所示：</p>
+   <p>每一个Event Type代表一个事件，每条消息可以包含多个事件。</p>
+   <p><img alt="" height="382" src="https://i-blog.csdnimg.cn/blog_migrate/31e77abbeb6d22b554265474726dd351.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;">Event Type</td>
+       <td style="text-align:center;">Comment</td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Use(=1)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端发送此事件通知服务器一个共享对象的创建</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Release(=2)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;当在客户端删除共享对象时，客户端将此事件发送到服务器上</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Request Change(=3)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端发送此事件以请求更改与共享对象命名参数关联的值</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Change(=4)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件通知除了正在发起请求之外的所有客户端命名参数值的变化</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Success(=5)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果请求被受理，服务器发送此事件给正在请求的客户端，以响应RequestChange事件</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">SendMessage(=6)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端将此事件发送到服务器以广播一个消息。在接收此事件时，服务器向所有客户端广播消息，包括该发送者</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Status(=7)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件以通知客户端相关的错误状况</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Clear(=8)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器将此事件发送给客户端，以清除共享对象。服务器还发送此事件以响应客户端在连接时发送Use event</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Remove(=9)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件让客户端删除一个slot</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Request Remove(=10)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端发送此事件让服务器删除一个slot</p></td>
+      </tr>
+      <tr>
+       <td>
+        <p style="text-align:center;">Use Success(=11)</p></td>
+       <td>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;成功连接时，服务器将此事件发送给客户端8. 音频信息（Audio Message）</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <h3 id="id-8.音频信息（AudioMessage）"><a name="t12"></a>4.5 音/视频信息（Audio/Video Message）</h3>
+   <p style="margin-left:0cm;">1、每一个message就是一帧数据。对于flv的tag而言，就是对应rtmp每个message，一个tag就是一个message，是一一对应的关系；相当于每一个tag都封装成一个message。</p>
+   <p>2、RTMP 块流使用Message Type ID=8 作为音频数据，flv的tag header-&gt;tag type也用8来表示音频。通常音频流的csid是4（也可以自定义），音频流的每一个chunk的csid都是相同的<span style="color:#fe2c24;">。</span></p>
+   <p><img alt="" height="356" src="https://i-blog.csdnimg.cn/blog_migrate/2b21fb72f5fcabae51cc25651bd4a2a6.png" width="1072">&nbsp;3、RTMP 块流使用Message Type ID=9 作为视频数据，flv的tag header-&gt;tag type也用9来表示音频。通常视频流的csid是6（也可以自定义），视频流的每一个chunk的csid都是相同的。</p>
+   <h3 id="%E2%80%8B%E7%BC%96%E8%BE%91%C2%A04.6%20%E8%81%9A%E5%90%88%E6%B6%88%E6%81%AF%EF%BC%88Aggregate%20Message%EF%BC%89"><a name="t13"></a><img alt="" height="356" src="https://i-blog.csdnimg.cn/blog_migrate/1ab70a152224248fd89e928a6471e716.png" width="1200"><strong>4.6 聚合消息（Aggregate Message）</strong></h3>
+   <p>1、聚合消息是包含一系列RTMP子消息的单个消息，Message Type ID＝22。</p>
+   <p>2、聚合消息的消息流ID覆盖聚合内部的子消息的消息流程ID；聚合消息和第一个子消息的时间戳之间的差异是用于将子消息的时间戳记重新规范化为流时间尺度的偏移量。偏移量被添加到每个子消息的时间戳，以达到标准化的流时间。第一个子消息的时间戳应与聚合消息的时间戳记相同，因此偏移量应为零；返回指针包含前一条消息的大小，包括其标头，它被包括以匹配FLV文件的格式，并用于反向搜索，类似于flv的previous tag header。</p>
+   <p>3、使用聚合消息有几个性能优势：</p>
+   <p>（1）区块流最多可以在一个区块内发送一条完整的消息。因此，增加块大小并使用聚合消息可以减少发送的块数。</p>
+   <p>（2）子消息可以连续存储在内存中。当进行系统调用以在网络上发送数据时，效率更高。</p>
+   <p>4、消息格式如下所示：</p>
+   <p><img alt="" height="470" src="https://i-blog.csdnimg.cn/blog_migrate/40be6a2554bdf3edfaa5716b5dd07b5d.png" width="1200"></p>
+   <h3 id="2.7%C2%A0%E7%94%A8%E6%88%B7%E6%8E%A7%E5%88%B6%E6%B6%88%E6%81%AF%EF%BC%88User%20Control%20Message%20Event%EF%BC%89"><a name="t14"></a>4.7&nbsp;用户控制消息（User Control Message Event）</h3>
+   <p>1、RTMP 流中的用户控制消息在接收时立即生效，消息中的时间戳被忽略。该信息在 chunk 流中发送时，它们的Message Stream ID必须为0（代表控制流信息），CSID必须为2，Message Type ID必须为4。和前面提到的协议控制信息（Protocol Control Message）不同，<span style="color:#fe2c24;">这是在RTMP协议层的，而不是在RTMP chunk流协议层的</span>，这个很容易弄混。</p>
+   <p>2、消息格式如下所示：</p>
+   <p>前 2 个字节数据用来标识事件类型，事件类型后面是事件数据。事件数据字段的大小是不固定的。因为消息是通过RTMP chunk发送的，所以最大块大小应足够大，以允许这些消息在单个块中。</p>
+   <p><img alt="" height="238" src="https://i-blog.csdnimg.cn/blog_migrate/cf5689f89594db343e58eb580e0a540a.png" width="1200"></p>
+   <div class="table-box">
+    <table>
+     <tbody>
+      <tr>
+       <td style="text-align:center;width:151px;">Event Type</td>
+       <td style="text-align:center;width:537px;">Comment</td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>StreamBegin(=0)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件通知客户端流成功创建，并可用于通信。默认情况下，在从客户端成功收到应用程序连接命令后，此事件以ID 0来发送</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Event Data大小是4字节，表示开始运行的流的stream ID</p></td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>StreamEOF(=1)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件通知客户端该流请求的数据回放结束。若不发出额外的命令，就没有更多的数据被发送了。客户端丢弃该流收到的消息</p>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp;Event Data大小是4字节，代表播放已结束流的stream ID</p></td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>StreamDry(=2)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件通知客户端，在流上没有更多的数据。如果服务器在一段时间内没有检测到任何的消息，它可以通知订阅的客户端流是结束的</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Event Data大小是4字节，代表已结束流的stream ID</p></td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>SetBufferLength(=3)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端发送此事件通知服务器用于缓冲从流过来的任何数据的缓冲区大小（以毫秒为单位）。此事件在服务器开始处理流之前被发送</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Event Data大小是8字节，前4字节是stream ID，后4字节是每毫秒缓冲区的长度</p></td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>StreamIsRecorded (=4)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件来通知客户端，需要记录（录像）</p>
+        <p>&nbsp; &nbsp; &nbsp; &nbsp; Event Data大小是4字节，代表需要记录的流的stream ID</p></td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>PingRequest(=6)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;服务器发送此事件来测试客户端是否是可到达的</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Event Data大小是4字节，内容是时间戳，表示当服务器发出命令时，本地服务器的时间。客户收到PingRequest时响应PingResponse</p></td>
+      </tr>
+      <tr>
+       <td style="width:151px;">
+        <p>PingResponse(=7)</p></td>
+       <td style="width:537px;">
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客户端向服务器发送此事件响应ping请求</p>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Event Data大小是4字节，内容是收到PingRequest时时间戳</p></td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+   <p>Event Type =&nbsp;StreamBegin</p>
+   <p><img alt="" height="324" src="https://i-blog.csdnimg.cn/blog_migrate/9c0a1bd7fdf5c68bd5221297a236df0f.png" width="1008"></p>
+   <p>Event Type =&nbsp;SetBufferLength</p>
+   <h2 id="%E2%80%8B%E7%BC%96%E8%BE%91"><a name="t15"></a><img alt="" height="320" src="https://i-blog.csdnimg.cn/blog_migrate/7b84715d9a9980fce38b2fdad1a50cd6.png" width="1082"></h2>
+   <p></p>
+   <h2 id="%E4%BA%94%E3%80%81%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93%E8%BF%87%E7%A8%8B"><a name="t16"></a>五、数据传输过程</h2>
+   <h3 id="5.1%20%E7%BB%86%E8%8A%82%E8%AF%B4%E6%98%8E"><a name="t17"></a>5.1 发送/接收过程概述</h3>
+   <p>1、<span style="color:#fe2c24;">Chunk在传输时：</span>同一个Message产生的多个Chunk只会串行发送，先发送的Chunk一定先到达。不同Message产生的Chunk可以并行发送，不同的Message可以是不同的流，并行发送的Chunk复用了一条TCP链接。这就是所说的<span style="color:#fe2c24;">多路复用（Multiplexing）</span></p>
+   <p>从下图中可以看出，发送端同时发送了3个chunk</p>
+   <p><img alt="" height="54" src="https://i-blog.csdnimg.cn/blog_migrate/c4d6737c1a3b92ffdf93e1c7c983173f.png" width="1200"></p>
+   <p>&nbsp;2、发送端、服务端</p>
+   <p><img alt="" height="1200" src="https://i-blog.csdnimg.cn/blog_migrate/79e52d7cbde2e3c24245f74af787d2ef.png" width="1200"></p>
+   <p>（1）发送端</p>
+   <p>把数据封装成消息（Message）：协议控制消息、用户控制消息、音视频数据消息等。</p>
+   <p>把消息分割成消息块（Chunk，网络中实际传输的内容）。</p>
+   <p>将分割后的消息块（Chunk）通过TCP协议发送出去。</p>
+   <p><img alt="" height="1200" src="https://i-blog.csdnimg.cn/blog_migrate/e449f1e30598b74a300e339cf0eac203.png" width="1200"></p>
+   <p>（2）接收端</p>
+   <p>在通过TCP协议收到数据后，现将消息块重新组合成消息(Message)。</p>
+   <p>通过对消息进行解封装处理就可以恢复出数据。</p>
+   <p><img alt="" height="1200" src="https://i-blog.csdnimg.cn/blog_migrate/5287500fc84d68f7da65bd21dea1a689.png" width="1200"></p>
+   <p><span style="color:#fe2c24;">&nbsp;3、RTMP消息优先级</span></p>
+   <p>（1）在RTMP中，消息(Message)主要分为两大类：控制消息（协议控制消息、用户控制消息）和数据消息（音视频消息）但是通路只有一条(RTMP是单通路)，到底谁先走呢，谁后走呢？在实际传输过程中是对消息分优先级，优先级高的先行。优先级低的不能阻塞 优先级高的。</p>
+   <p>（2）总结起来就是协议先行，数据次之</p>
+   <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;协议控制消息（Protocol Control Messages）和用户控制消息（User Control Messages）应该包含消息它们的Message Stream ID必须为0（代表控制流信息），CSID必须为2。</p>
+   <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;数据消息（音频信息、音频消息）比控制信息的优先级低。 另外，一般情况下，音频消息比视频数据优先级高。</p>
+   <h3 id="%E2%80%8B%E7%BC%96%E8%BE%915.2%20chunk%E4%BC%A0%E8%BE%93%E8%BF%87%E7%A8%8B%E7%A4%BA%E4%BE%8B"><a name="t18"></a><img alt="" height="910" src="https://i-blog.csdnimg.cn/blog_migrate/e1a29a9733d95fc5aa418d45fd4c0250.png" width="1200">5.2 Chunk传输过程示例</h3>
+   <p>1、下面2个例子均来源于RTMP官方文档</p>
+   <p id="5.2.1%C2%A0Audio%20Example%C2%A0"><strong>5.2.1&nbsp;Audio Example&nbsp;</strong></p>
+   <p>一个audio的消息流：Message Type ID = 8 表示音频，每个message有相同的message stream ID，message type ID，message length，以及增量相同的timestamp。</p>
+   <p><img alt="" height="496" src="https://i-blog.csdnimg.cn/blog_migrate/7b938696ff2e897de4d6219df1b91718.png" width="1200"></p>
+   <p>audio message比较小，基本不会对message进行拆分，一个message对应一个chunk，实际发送的情况为：</p>
+   <p>第1个Message的chunk的chunk type为0，因为前面没有可参考的chunk，此时chunk的长度为Basic Header（1 byte）+ Message Header（11 bytes）+ Payload（32 bytes）= 44 bytes。</p>
+   <p>第2个Message的chunk可与前一个共用length、type id和msid，但是不可省略timestamp delta字段，所以chunk type为2，同理可得chunk长度为36 bytes。</p>
+   <p>第3个Message的chunk可以共用前一个的timestamp delta字段，所以chunk type为3，chunk长度为33 bytes。</p>
+   <p>第4个Message的chunk可以共用前一个的timestamp delta字段，所以chunk type为3，chunk长度为33 bytes。</p>
+   <p><img alt="" height="830" src="https://i-blog.csdnimg.cn/blog_migrate/ca77e9995092e4efec6f62cd1af5f29a.png" width="1200"></p>
+   <p id="5.2.2%20Video%20Example"><strong>5.2.2 Video Example</strong></p>
+   <p>一个video的消息流：Message Type ID = 9&nbsp;表示视频，</p>
+   <p><img alt="" height="264" src="https://i-blog.csdnimg.cn/blog_migrate/e47e20a43c29362d0941f92c75f09543.png" width="1200"></p>
+   <p>Payload length为307 &gt; 128字节（chunk data默认是128字节），所以需要将Message拆分成多个chunks，首个chunk使用Type 0；</p>
+   <p>之后的chunk由于是同一个Message拆分而来，以上字段都可共享，所以直接使用Type 3</p>
+   <p>需要注意的是，第一个chunk的length需要传入整个message的负载长度即307</p>
+   <p><img alt="" height="718" src="https://i-blog.csdnimg.cn/blog_migrate/31860f5f55ae21694f2fa60ff1ac578c.png" width="1200"></p>
+   <h3 id="5.3%20RTMP%E6%8E%A8%E6%8B%89%E6%B5%81%E8%BF%87%E7%A8%8B"><a name="t19"></a>5.3 RTMP推拉流过程</h3>
+   <p id="5.3.1%20%E6%8B%89%E6%B5%81%E8%BF%87%E7%A8%8B"><strong>5.3.1 推流过程</strong></p>
+   <p>1、客户端发送握手请求，和服务器完成握手。</p>
+   <p>2、客户端发送命令消息中的“连接”(connect)到服务器，请求与一个服务应用实例建立连接。</p>
+   <p>3、服务器接收到连接命令消息后，发送确认窗口大小(Window Acknowledgement Size)到客户端，同时连接到连接命令中提到的应用程序。</p>
+   <p>4、服务器发送设置带宽协议(Set Peer Bandwidth)消息到客户端。</p>
+   <p>5、客户端处理设置带宽协议控制消息后，发送确认窗口大小(Window Acknowledgement Size)到服务器端。</p>
+   <p>6、服务器发送用户控制消息中的“流开始”(StreamBegin)消息到客户端，通知客户端流成功创建，可用于通信。</p>
+   <p>7、服务端发送connect的“应答消息”(_result)，通知客户端连接的状态。</p>
+   <p>8、客户端发送网络连接命令的“创建流”(createStream)消息到服务端，以创建消息通信的逻辑通道。音频、视频和元数据的发布通过使用createStream命令创建的流通道执行。服务端发送createStream的“应答消息”(_result)。</p>
+   <p>9、客户端发送网络流命令的“发布”(publish)到服务端，将命名流发布到服务器。其它客户端可以使用此流名来播放流，接收发布的音频，视频，以及其他数据消息。</p>
+   <p>10、客户端发送命令消息或音视频数据至服务端。</p>
+   <p><img alt="" height="1200" src="https://i-blog.csdnimg.cn/blog_migrate/a5a7c73f94b638f63ae3b26bae8a7d6f.png" width="1200"></p>
+   <p></p>
+   <p><img alt="" height="1088" src="https://i-blog.csdnimg.cn/blog_migrate/78fe137cae2e3b8d7cb3851c83b0b873.png" width="1200"></p>
+   <p><span style="color:#fe2c24;">注意：</span></p>
+   <p><span style="color:#494949;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上图中在看发送的数据的同时也要关注发送端和接收端的ip，弄清楚是客户端还是服务器发送的消息；在推流的时候往往能看到&nbsp;</span>FCPublish、releasestream 消息，这两种消息官方文档中没有描述，在srs代码中只是接收了消息并给出了应答，但是在代码内部并没有处理这两种消息</p>
+   <p id="5.3.2%20%E6%8B%89%E6%B5%81%E8%BF%87%E7%A8%8B"><strong>5.3.2 拉流过程</strong></p>
+   <p>1、客户端发送握手请求，和服务器完成握手。</p>
+   <p>2、客户端发送命令消息中的“连接”(connect)到服务器，请求与一个服务应用实例建立连接。</p>
+   <p>3、客户端发送网络连接命令的“创建流”(createStream)消息到服务端，以创建消息通信的逻辑通道。音频、视频和元数据的发布通过使用createStream命令创建的流通道执行。服务端发送createStream的“应答消息”(_result)。</p>
+   <p>4、客户端发送网络流命令中的“播放”(play)到服务端。</p>
+   <p>5、服务端发送协议控制消息中的“设置块大小”(Set Chunk Size)到客户端设置chunk大小。</p>
+   <p>6、服务器发送另一个协议控制消息（用户控制），指定事件“StreamIsRecorded”和该消息中的流ID。消息在前2字节中携带事件类型，在后4字节中携带流ID。</p>
+   <p>7、服务端发送用户控制消息中的“流开始”(StreamBegin)消息到客户端，通知客户端流成功创建，可用于通信。</p>
+   <p>8、如果客户端发送的播放命令成功，则服务器发送onStatus命令消息NetStream.Play.Start和NetStream.Play.Reset。仅当客户端发送的播放命令设置了重置标志时，服务器才会发送NetStream.Play.Reset。如果未找到要播放的流，服务器将发送onStatus消息NetStream.Play.StreamNotFound。</p>
+   <p>9、服务端发送音视频数据到客户端。</p>
+   <p><img alt="" height="1200" src="https://i-blog.csdnimg.cn/blog_migrate/09792e580f1008e133447ff122d89941.png" width="1200"></p>
+   <p><img alt="" height="844" src="https://i-blog.csdnimg.cn/blog_migrate/57a56f84103426aaa8b6a90669ba4da1.png" width="1200"></p>
+   <p>1、客户端发送网络流命令中的“播放2”(play2)到服务端</p>
+   <p>2、服务端发送不同码率的音视频数据到客户端</p>
+   <p><img alt="" height="1200" src="https://i-blog.csdnimg.cn/blog_migrate/824fe3ca4fdf3afd1d7d06c960414c09.png" width="1200"></p>
+   <p id=""></p>
+   <h2 id="%E5%85%AD%E3%80%81%E7%9F%A5%E8%AF%86%E7%82%B9%E6%B1%87%E6%80%BB"><a name="t20"></a>六、知识点汇总</h2>
+   <p>1、message分成chunk的目的：<span style="color:#000000;">防止一个大的数</span><span style="color:#494949;">据包传输时间过长，阻塞其它数据包的传输。</span></p>
+   <p>2、chunk分成4中形式的目的：减少重复数据发送，提高chunk data的占比。</p>
+   <p>3、消息优先级：总结起来就是协议先行，数据次之。详见“五、数据传输过程-&gt; 5.1-&gt;细节说明-<span style="color:#494949;">&gt;3、RTMP消息优先级”。</span></p>
+   <p>4、协议控制消息（Protocol Control Messages）：中断消息只能是数据发送端给接收端（如果是推流就是客户端发给服务端，如果是拉流则是服务端发给客户端），其它消息都可以双端发送。</p>
+   <p>5、命令消息（Command Message）</p>
+   <p>（1）先有网络连接命令再有网络流命令，也就是说先建立连接，才能传输数据。</p>
+   <p>（2）所有命令消息都需要应答，网络连接命中不同的命令应答格式不同，网络流命令的应答命令格式相同。</p>
+   <p>（3）除了调用（call）命令可以双端发送外，其余命令消息都是客户端向服务端发送，服务端向客户端发送应答消息。</p>
+   <p></p>
+   <h2 id="%E4%B8%83%E3%80%81RTMP%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%8F%8A%E4%BC%98%E7%BC%BA%E7%82%B9"><a name="t21"></a><span style="color:#0d0016;">七、RTMP</span>使用场景及优缺点</h2>
+   <p>1、使用场景：用于流式传输到 Flash 播放器，广泛应用于直播。</p>
+   <p>2、RTMP的优点<br>
+     （1）低延迟：RTMP使用独占的 1935 端口，无需缓冲，可以实现低延迟。</p>
+   <p>（2）适应性强：所有 RTMP 服务器都可以录制直播媒体流，同时还允许观众跳过部分广播并在直播开始后加入直播流。</p>
+   <p>（3）灵活性：RTMP 支持整合文本、视频和音频，支持 MP3 和 AAC 音频流，也支持MP4、FLV 和 F4V 视频。</p>
+   <p>3、RTMP的缺点<br>
+     （1）HTML5 不支持：标准HTML5 播放器不支持 RTMP 流。</p>
+   <p>（2）容易受到带宽问题的影响：RTMP 流经常会出现低带宽问题，造成视频中断。</p>
+   <p>（3）HTTP 不兼容：无法通过 HTTP 流式传输 RTMP，必须需要实现一个特殊的服务器，并使用第三方内容交付网络或使用流媒体视频平台。</p>
+   <p>（<a href="https://blog.csdn.net/daocaokafei/article/details/127098972" title="什么是RTMP 和 RTSP？它们之间有什么区别？_一口Linux的博客-CSDN博客_rtsp">什么是RTMP 和 RTSP？它们之间有什么区别？_一口Linux的博客-CSDN博客_rtsp</a>）</p>
+   <p></p>
+   <h2 id="%E5%85%AB%E3%80%81QA"><a name="t22"></a>八、QA</h2>
+   <h3 id="1%E3%80%81rtmp%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E4%BD%8E%E5%BB%B6%E6%97%B6%EF%BC%9F"><a name="t23"></a>1、rtmp为什么会低延时？</h3>
+   <p>一个message就是帧，相当于一帧数据产生后立刻发送过来，所以延时较低。相比于HLS，一个切片生成后才会发送，延时就会很大。</p>
+   <h3 id="2%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E6%9C%89AMF0%E5%92%8CAMF3%EF%BC%9F%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F" style="margin-left:0px;text-align:left;"><a name="t24"></a><span style="background-color:#ffffff;"><span style="color:#000000;">2、为什么会有AMF0和AMF3？有什么区别？</span></span></h3>
+   <p style="margin-left:0;text-align:left;"><img alt="" height="438" src="https://i-blog.csdnimg.cn/blog_migrate/735c58897dbabfa86a0a568cfe9f404c.png" width="1200"></p>
+   <p style="margin-left:0;text-align:left;">AMF从Flash MX时代的AMF0发展到现在的AMF3。AMF3用作Flash Playe 9的ActionScript 3.0的默认序列化格式，而AMF0则用作旧版的ActionScript 1.0和2.0的序列化格式。 在网络传输数据方面，AMF3比AMF0更有效率。AMF3能将int和uint对象作为整数（integer）传输，并且能序列化ActionScript 3.0才支持的数据类型, 比如ByteArray，XML和Iexternalizable。（<a href="https://blog.csdn.net/weixin_45750967/article/details/117392393" title="AMF的概念，产生原因和特点（AMF0和AMF3）_mosaic_born的博客-CSDN博客_amf0编码">AMF的概念，产生原因和特点（AMF0和AMF3）_mosaic_born的博客-CSDN博客_amf0编码</a>）</p>
+   <h3 id="3%E3%80%81%E6%8E%A5%E6%94%B6%E7%AB%AF%E5%A6%82%E4%BD%95%E7%9F%A5%E9%81%93%E5%93%AA%E4%BA%9Bchunk%E5%B1%9E%E4%BA%8E%E5%90%8C%E4%B8%80%E4%B8%AAmessage%EF%BC%9F" style="margin-left:0px;text-align:left;"><a name="t25"></a>3、接收端如何知道哪些chunk属于同一个message？</h3>
+   <p>通过srs代码（SrsProtocol::read_message_payload）得知：<span style="color:#494949;">接收端将接收到chunk的</span>chunk data的大小加和，如果等于message payload（通过chunk-&gt;message header-&gt;message length获取）的则认为是同一个message。</p>
+   <h3 id="4%E3%80%81%E6%AF%8F%E4%B8%AAchunk%E7%9A%84csid%E6%98%AF%E5%90%A6%E7%9B%B8%E5%90%8C%EF%BC%9F" style="margin-left:0px;text-align:left;"><a name="t26"></a><span style="background-color:#ffffff;"><span style="color:#000000;">4、每个chunk的csid是否相同？</span></span></h3>
+   <p style="margin-left:0;text-align:left;">csid是chunk的一个标识，csid和chunk的类型有关，详见<strong>“3.2.1 Basic Header”，</strong>所以同一类型的不同chunk的csid是相同的。csid和chunk是否属于同一个message没关系。</p>
+   <h3 id="5%E3%80%81chunk%E7%9A%84%E5%93%AA%E4%BA%9B%E5%AD%97%E6%AE%B5%E7%BB%A7%E6%89%BF%E8%87%B3message%20%EF%BC%9F" style="margin-left:0px;text-align:left;"><a name="t27"></a><span style="color:#0d0016;">5、chunk的哪些字段继承至message ？</span></h3>
+   <p><span style="color:#494949;">可以参考“<strong>3.2.2 Message Header-&gt;</strong>3、chunk-&gt;message header 和 message-&gt;message header 的关系”</span></p>
+   <h3 id="6%E3%80%81message%E6%8B%86%E5%88%86%E6%88%90chunk%E4%BC%A0%E8%BE%93%E6%98%AF%E9%98%B2%E6%AD%A2%E4%BD%8E%E4%BC%98%E5%85%88%E7%BA%A7%E7%9A%84%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93%E6%97%B6%E9%97%B4%E9%95%BF%E9%98%BB%E5%A1%9E%E4%BC%98%E5%85%88%E7%BA%A7%E9%AB%98%E7%9A%84%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93%EF%BC%8C%E5%93%AA%E4%BA%9B%E6%98%AF%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7%E6%95%B0%E6%8D%AE%EF%BC%8C%E5%93%AA%E4%BA%9B%E6%98%AF%E4%BD%8E%E4%BC%98%E5%85%88%E7%BA%A7%E6%95%B0%E6%8D%AE%EF%BC%9F"><a name="t28"></a><span style="color:#494949;">6、message拆分成chunk传输是防止低优先级的数据传输时间长阻塞优先级高的数据传输，哪些是高优先级数据，哪些是低优先级数据？</span></h3>
+   <p>消息优先级：总结起来就是协议先行，数据次之。详见“五、数据传输过程-&gt; 5.1-&gt;细节说明-<span style="color:#494949;">&gt;3、RTMP消息优先级”。</span></p>
+   <h3 id="6%E3%80%81rtmp%E5%92%8Cflv%E7%9A%84%E5%85%B3%E7%B3%BB%EF%BC%9F" style="margin-left:0px;text-align:left;"><a name="t29"></a><span style="color:#0d0016;">7、rtmp和flv的关系？</span></h3>
+   <p><span style="color:#0d0016;">1、rtmp是数据传输协议，flv是音视频的封装格式。</span></p>
+   <p><span style="color:#0d0016;">2、rtmp和flv在音视频数据的封装上是相同的，即</span><span style="color:#fe2c24;">message payload</span><span style="color:#0d0016;">的数据形式和</span><span style="color:#fe2c24;">flv tag data</span><span style="color:#0d0016;">的数据形式是相同的，也就是说flv tag</span>和rtmp message，除了header部分，body部分格式是完全一样的。</p>
+   <p>音频</p>
+   <p><img alt="" height="224" src="https://i-blog.csdnimg.cn/blog_migrate/71bbfc822a709d8f75cc7763faed0dc3.png" width="1200"></p>
+   <p>&nbsp;视频</p>
+   <p><img alt="" height="328" src="https://i-blog.csdnimg.cn/blog_migrate/225f6ff5565ff2ae44aae08c45bf7772.png" width="1200"></p>
+  </div>
+ </body>
+</html>

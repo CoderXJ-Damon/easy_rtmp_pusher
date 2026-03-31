@@ -26,10 +26,10 @@ using namespace LQF;
 #undef main
 
 //#define RTMP_URL "rtmp://111.229.231.225/live/livestream"
-#define RTMP_URL "rtmp://114.215.169.66/live/livestream"
+#define RTMP_URL "rtmp://192.168.126.128/live/livestream"
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
 // ffmpeg -re -i  rtmp_test_hd.flv  -vcodec copy -acodec copy  -f flv -y rtmp://192.168.1.12/live/livestream
-//// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://111.229.231.225/live/livestream
+//// ffmpeg -re -i  1920x832_25fps.flv  -vcodec copy -acodec copy  -f flv -y rtmp://192.168.126.128/live/livestream
 int main(int argc, char* argv[])
 {
     init_logger("rtmp_push.log", S_INFO);
